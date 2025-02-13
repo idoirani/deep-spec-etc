@@ -1,18 +1,27 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*- 
 
+"""
+This Dash application displays an Exposure Time Calculator (ETC) for the MAST/DeepSpec instrument.
+It consists of several "frames" (cards) that contain the title, an informational notice, the plot,
+and parameter controls. The parameter inputs are grouped into sections that are conditionally
+displayed based on the selected calculation type (SNR, Limiting Magnitude, or Spectra per Hour).
+
+The application is responsive and includes mobile-friendly meta tags.
+"""
 
 import dash
 from dash import dcc, html, Input, Output, State
 import dash_bootstrap_components as dbc
-import parameters  # your parameters module
-import ETC         # our refactored ETC module
+import parameters  # Module containing default parameters
+import ETC         # Module that runs the ETC calculations and returns a Plotly figure
 import numpy as np 
-# Initialize the Dash app.
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+# Initialize the Dash app with Bootstrap CSS and mobile-friendly meta tags.
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
+                meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}])
 
 # Define the layout.
 app.layout = dbc.Container([
-    # Title Frame
+    # Title Frame: Displays the main title in a card.
     dbc.Row(
         dbc.Col(
             dbc.Card([
@@ -20,43 +29,46 @@ app.layout = dbc.Container([
                     html.H1("MAST/DeepSpec SNR Calculator", className="text-center")
                 )
             ]),
-            width=6
+            width=8
         ),
         className="mb-4"
     ),
-dbc.Row(
-    dbc.Col(
-        dbc.Card([
-            dbc.CardBody([
-                html.H5(
-                    "This is our BETA version, and is still under development and testing (updated 13/02/2024)",
-                    className="text-left",
-                    style={"color": "red"}
-                ),
-                html.P(
-                    "The calculations in this ETC are based on the as-built wavelength dependent resolution, and estimated end-to-end throughput of DeepSpec coupled to the MAST array, and assuming no slit losses (see https://ui.adsabs.harvard.edu/abs/2024SPIE13094E..53I/abstract). For comments and questions, please contact idoirani@gmail.com. ",
-                    style={"color": "black", "textAlign": "left"}
-                )
-            ])
-        ]),
-        width=6
-    ),
-    className="mb-4"
-),
-    # Graph Frame
+    # Informational Frame: Displays a smaller red notice and an explanation in black.
+
     dbc.Row(
         dbc.Col(
             dbc.Card([
-                #dbc.CardHeader("Graph"),
-                dbc.CardBody(
-                    dcc.Graph(id="graph-output")
-                )
+                dbc.CardBody([
+                    html.H5(
+                        "This is our BETA version, and is still under development and testing (updated 13/02/2024)",
+                        className="text-left",
+                        style={"color": "red"}
+                    ),
+                    # Explanation text in black on a new line.
+
+                    html.P(
+                        "The calculations in this ETC are based on the as-built wavelength dependent resolution, and estimated end-to-end throughput of DeepSpec coupled to the MAST array, and assuming no slit losses (see https://ui.adsabs.harvard.edu/abs/2024SPIE13094E..53I/abstract). For comments and questions, please contact idoirani@gmail.com. ",
+                        style={"color": "black", "textAlign": "left"}
+                    )
+                ])
             ]),
-            width=6
+            width=8
         ),
         className="mb-4"
     ),
-    # Parameter Card row
+    # Graph Frame: Displays the Plotly graph in its own card.
+    dbc.Row(
+        dbc.Col(
+            dbc.Card([
+                dbc.CardBody(
+                    dcc.Graph(id="graph-output", config={'responsive': True})
+                )
+            ]),
+            width=8
+        ),
+        className="mb-4"
+    ),
+    # Parameter Card Frame: Contains all parameter inputs grouped in several sections.
     dbc.Row(
         dbc.Col(
             dbc.Card([
@@ -71,7 +83,7 @@ dbc.Row(
                                 options=[
                                     {"label": "SNR", "value": "SNR"},
                                     {"label": "Limiting magnitude", "value": "limmag"},
-                                    {"label": "Spectra per hour", "value": "spec_per_hour"}
+                                    {"label": "Spectra per hour (this might take a moment)", "value": "spec_per_hour"}
                                 ],
                                 value=parameters.calc_type
                             )
@@ -81,7 +93,7 @@ dbc.Row(
                             dcc.Dropdown(
                                 id="sky-brightness",
                                 options=[
-                                    {"label": "Dark", "value": 0},
+                                    {"label": "Dark (20.9 mag/arcsec^2)", "value": 0},
                                     {"label": "Dark+2", "value": -2},
                                     {"label": "Dark+4", "value": -4},
                                     {"label": "Dark+6", "value": -6}
@@ -97,14 +109,16 @@ dbc.Row(
                                     {"label": "[1,1]", "value": "[1,1]"},
                                     {"label": "[2,1]", "value": "[2,1]"},
                                     {"label": "[3,1]", "value": "[3,1]"},
-                                    {"label": "[2,2]", "value": "[2,2]"}
-                                ],
+                                    {"label": "[2,2]", "value": "[2,2]"},
+                                    {"label": "[2,3]", "value": "[2,3]"},
+                                    {"label": "[3,3]", "value": "[3,3]"},
+                          ],
                                 value='[1,1]'
                             )
                         ], md=4)
                     ], className="mb-3"),
                     
-                    # SNR-specific parameters row
+                    # SNR-Specific Parameters Row (only visible when calc-type == "SNR")
                     dbc.Row(
                         dbc.Col([
                             # Spectrum Type dropdown
@@ -123,7 +137,7 @@ dbc.Row(
                                         value=parameters.spec_type
                                     )
                                 ], md=4),
-                                # Stellar spectrum options (conditionally visible via callback)
+                                # Stellar spectrum options: Shown only when spec-type == "stellar"
                                 dbc.Col(
                                     html.Div(
                                         id="stellar-spectrum-options",
@@ -140,19 +154,19 @@ dbc.Row(
                                     ),
                                     md=4
                                 ),
-                                # blackbody temperature (conditionally visible via callback)
+                                # Blackbody Temperature: Shown only when spec-type == "bb"
 
                                 dbc.Col(
                                     html.Div(
                                         id="bb-temp-container",
                                         children=[
                                             html.Label("Blackbody Temperature"),
-                                            dcc.Input(id="bb-temp", type="number", value=parameters.bb_temp)
+                                            dcc.Input(id="bb-temp", type="number", value=parameters.bb_temp, min=1000,max = 1000000, step = 1)
                                         ]
                                     ),
                                     md=4
                                 ),
-                                # Teff options (conditionally visible via callback)
+                                # Teff options: Shown only when spec-type == "WD" (conditional callback not shown here)
 
                                 dbc.Col(
                                     html.Div(
@@ -170,7 +184,7 @@ dbc.Row(
                                     ),
                                     md=4
                                 ),
-                                # logg options (conditionally visible via callback)
+                                # logg options: Shown only when spec-type == "WD" (conditional callback not shown here)
 
                                 dbc.Col(
                                     html.Div(
@@ -190,19 +204,21 @@ dbc.Row(
                                 ),
 
                             ], className="mb-2"),
+                            # Second row within SNR options: Exposure Time, V Band Magnitude, and number of telescopes.
+
                             dbc.Row([
                                 dbc.Col([
                                     html.Label("Exposure Time"),
-                                    dcc.Input(id="t_snr", type="number", value=parameters.T_norm)
+                                    dcc.Input(id="t_snr", type="number", value=parameters.T_norm, min=1,max = 2000, step = 1)
                                 ], md=4), 
 
                                 dbc.Col([
                                     html.Label("V Band Magnitude"),
-                                    dcc.Input(id="ab-mag-renorm", type="number", value=parameters.AB_mag_renorm)
+                                    dcc.Input(id="ab-mag-renorm", type="number", value=parameters.AB_mag_renorm, min=5,max = 23)
                                 ], md=4),
                                 dbc.Col([
                                     html.Label("Number of Telescopes in Group"),
-                                    dcc.Input(id="n-tel-group", type="number", value=parameters.n_tel_group)
+                                    dcc.Input(id="n-tel-group", type="number", value=parameters.n_tel_group, min=1,max = 20, step = 1)
                                 ], md=4)
                             ], className="mb-2"),
 
@@ -211,7 +227,7 @@ dbc.Row(
                         className="mb-3"
                     ),
                     
-                    # Limiting Magnitude-specific parameters row
+                    # Limiting Magnitude-Specific Parameters Row (only visible when calc-type == "limmag")
                     dbc.Row(
                         dbc.Col([
                             dbc.Row([
@@ -221,17 +237,17 @@ dbc.Row(
                                 ], md=4),
                                 dbc.Col([
                                     html.Label("Maximum Exposure Time"),
-                                    dcc.Input(id="t_max", type="number", value=parameters.T_exp)
+                                    dcc.Input(id="t_max", type="number", value=parameters.T_exp, min=100,max = 2000, step = 1)
                                 ], md=4),
                                 dbc.Col([
                                     html.Label("Wavelength (Ang)"),
-                                    dcc.Input(id="wl", type="number", value=parameters.wl)
+                                    dcc.Input(id="wl", type="number", value=parameters.wl, min=3700,max = 9000, step = 1)
                                 ], md=4)
                             ], className="mb-2"),
                             dbc.Row([
                                 dbc.Col([
                                     html.Label("SNR Limit"),
-                                    dcc.Input(id="sigma_limit", type="number", value=parameters.sigma_limit)
+                                    dcc.Input(id="sigma_limit", type="number", value=parameters.sigma_limit, min=5, max = 100, step = 1)
                                 ], md=4),
                                 dbc.Col([
                                     html.Label("SNR Calculation Type"),
@@ -250,17 +266,17 @@ dbc.Row(
                         className="mb-3"
                     ),
                     
-                    # Spectra per Hour-specific parameters row
+                    # Spectra per Hour-Specific Parameters Row (only visible when calc-type == "spec_per_hour")
                     dbc.Row(
                         dbc.Col([
                             dbc.Row([
                                 dbc.Col([
                                     html.Label("Number of Telescopes in Full Array"),
-                                    dcc.Input(id="n-tel", type="number", value=parameters.n_tel)
+                                    dcc.Input(id="n-tel", type="number", value=parameters.n_tel, min=1,max = 20, step = 1)
                                 ], md=4),
                                 dbc.Col([
                                     html.Label("Overhead (sec)"),
-                                    dcc.Input(id="overhead", type="number", value=parameters.overhead_sec)
+                                    dcc.Input(id="overhead", type="number", value=parameters.overhead_sec, min=1,max = 1000, step = 1)
                                 ], md=4),
                                 dbc.Col([
                                     html.Label("SNR Array"),
@@ -281,30 +297,32 @@ dbc.Row(
                     
                 ])
             ]),
-            width=6
+            width=8
         )
     )
 ], fluid=True)
 
 # --- Callbacks ---
 
-# Toggle visibility of Blackbody Temperature (only when spec-type is "bb")
+# Callback: Toggle visibility of Blackbody Temperature container.
 @app.callback(
     Output("bb-temp-container", "style"),
     Input("spec-type", "value")
 )
 def toggle_bb_temp_options(spec_type):
+    # Show Blackbody Temperature input only when spec-type is "bb"
     if spec_type == "bb":
         return {"display": "block", "margin-bottom": "1rem"}
     else:
         return {"display": "none"}
 
-# Toggle visibility of Stellar Spectrum Options (only when spec-type is "stellar")
+# Callback: Toggle visibility of Stellar Spectrum Options container.
 @app.callback(
     Output("stellar-spectrum-options", "style"),
     Input("spec-type", "value")
 )
 def toggle_stellar_options(spec_type):
+    # Show Stellar Spectrum dropdown only when spec-type is "stellar"
     if spec_type == "stellar":
         return {"display": "block", "margin-bottom": "1rem"}
     else:
@@ -315,7 +333,8 @@ def toggle_stellar_options(spec_type):
     Output("Teff-options", "style"),
     Input("spec-type", "value")
 )
-def toggle_stellar_options(spec_type):
+def toggle_Teff_options(spec_type):
+    # Show Teff dropdown only when spec-type is "WD"
     if spec_type == "WD":
         return {"display": "block", "margin-bottom": "1rem"}
     else:
@@ -325,12 +344,13 @@ def toggle_stellar_options(spec_type):
     Output("logg-options", "style"),
     Input("spec-type", "value")
 )
-def toggle_stellar_options(spec_type):
+def toggle_logg_options(spec_type):
+    # Show logg dropdown only when spec-type is "WD"
     if spec_type == "WD":
         return {"display": "block", "margin-bottom": "1rem"}
     else:
         return {"display": "none"}
-# Toggle visibility of entire option rows based on calculation type.
+# Callback: Toggle visibility of entire option rows based on Calculation Type.
 @app.callback(
     Output("snr-options-row", "style"),
     Output("limmag-options-row", "style"),
@@ -340,6 +360,7 @@ def toggle_stellar_options(spec_type):
 def toggle_calc_type_rows(calc_type):
     hidden = {"display": "none"}
     visible = {"display": "block"}
+    # Display the appropriate row based on selected calc-type.
     if calc_type == "SNR":
         return visible, hidden, hidden
     elif calc_type == "limmag":
@@ -349,7 +370,7 @@ def toggle_calc_type_rows(calc_type):
     else:
         return hidden, hidden, hidden
 
-# --- Callback to Update the Plot ---
+# Callback: Update the Plot when the Refresh Plot button is clicked.
 @app.callback(
     Output("graph-output", "figure"),
     Input("refresh-button", "n_clicks"),
@@ -376,6 +397,10 @@ def toggle_calc_type_rows(calc_type):
 def update_plot(n_clicks, calc_type, spec_type, stellar_type,Teff, logg, bb_temp, ab_mag_renorm,
                 n_tel, wl, n_tel_arr, n_tel_group, T_exp, sigma_limit, Type,
                 delta_sky, binning, T_norm, overhead_sec, SNR_arr):
+    """
+    Updates the global parameters based on user inputs and runs the ETC calculation.
+    Returns a Plotly figure generated by ETC.run_ETC().
+    """
     import importlib
     importlib.reload(parameters)
     parameters.calc_type = calc_type
@@ -384,27 +409,40 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type,Teff, logg, bb_temp
     parameters.AB_mag_renorm = ab_mag_renorm
     parameters.n_tel = n_tel
     parameters.wl = wl
+    # Convert the comma-separated telescope numbers to a list of integers.
     parameters.n_tel_arr = [int(x.strip()) for x in n_tel_arr.split(',')]
     parameters.n_tel_group = n_tel_group
     parameters.T_exp = T_exp
     parameters.sigma_limit = sigma_limit
     parameters.Type = Type
     parameters.delta_sky = delta_sky
+    parameters.Sky_brightness_surface_den = parameters.best_sky_brightness_surface_den + parameters.delta_sky 
+
     parameters.T_norm = T_norm
     parameters.overhead_sec = overhead_sec
+    # Convert the comma-separated SNR values to a list of integers.
     parameters.SNR_arr = [int(x.strip()) for x in SNR_arr.split(',')]
+    # Convert binning string "[x,y]" to a list of integers.
+    parameters.binning = [int(x) for x in binning.strip('[]').split(',')]
+
+    # Set the stellar type if applicable.
     if spec_type == "stellar":
         parameters.stellar_type = stellar_type
     else:
         parameters.stellar_type = None
+    # For WD models, set Teff and logg (if spec_type is 'WD')
+
     if spec_type == 'WD':
         parameters.Teff = Teff
         parameters.logg = logg
     else:
         parameters.Teff = None
         parameters.logg = None
+    # Run the ETC calculations and return the resulting figure.
+
     fig = ETC.run_ETC()
     return fig
 
 if __name__ == "__main__":
-    app.run_server(debug=True, host='0.0.0.0', port=8091)
+    app.run_server(debug=True)
+    #app.run_server(debug=True, host='0.0.0.0', port=8091)
