@@ -116,7 +116,9 @@ dbc.Row(
                                         options=[
                                             {"label": "Blackbody", "value": "bb"},
                                             {"label": "Flat in f_nu", "value": "flat"},
-                                            {"label": "Pickels' Stellar Spectra", "value": "stellar"}
+                                            {"label": "Pickels' Stellar Spectra", "value": "stellar"},
+                                            {"label": "Koester WD Models", "value": "WD"}
+
                                         ],
                                         value=parameters.spec_type
                                     )
@@ -129,7 +131,7 @@ dbc.Row(
                                             html.Label("Choose Stellar Type"),
                                             dcc.Dropdown(
                                                 id="stellar-spectrum-dropdown",
-                                                options=[{'label': key, 'value': key} for key in parameters.path_dic.keys()],
+                                                options=[{'label': key, 'value': key} for key in parameters.stellar_path_dic.keys()],
                                                 value="G"
                                             )
                                         ],
@@ -150,6 +152,43 @@ dbc.Row(
                                     ),
                                     md=4
                                 ),
+                                # Teff options (conditionally visible via callback)
+
+                                dbc.Col(
+                                    html.Div(
+                                        id="Teff-options",
+                                        children=[
+                                            html.Label("Teff"),
+                                            dcc.Dropdown(
+                                                id="Teff-dropdown",
+                                                options=[{'label': T, 'value': T} for T in np.unique(parameters.Teff)],
+                                                value="G"
+                                            )
+                                        ],
+                                        style={"display": "none"}  # hidden by default
+
+                                    ),
+                                    md=4
+                                ),
+                                # logg options (conditionally visible via callback)
+
+                                dbc.Col(
+                                    html.Div(
+                                        id="logg-options",
+                                        children=[
+                                            html.Label("logg"),
+                                            dcc.Dropdown(
+                                                id="logg-dropdown",
+                                                options=[{'label': Lg, 'value': Lg} for Lg in np.unique(parameters.logg)],
+                                                value="G"
+                                            )
+                                        ],
+                                        style={"display": "none"}  # hidden by default
+
+                                    ),
+                                    md=4
+                                ),
+
                             ], className="mb-2"),
                             dbc.Row([
                                 dbc.Col([
@@ -271,6 +310,26 @@ def toggle_stellar_options(spec_type):
     else:
         return {"display": "none"}
 
+# Toggle visibility of Teff Spectrum Options (only when spec-type is "WD")
+@app.callback(
+    Output("Teff-options", "style"),
+    Input("spec-type", "value")
+)
+def toggle_stellar_options(spec_type):
+    if spec_type == "WD":
+        return {"display": "block", "margin-bottom": "1rem"}
+    else:
+        return {"display": "none"}
+# Toggle visibility of logg Spectrum Options (only when spec-type is "WD")
+@app.callback(
+    Output("logg-options", "style"),
+    Input("spec-type", "value")
+)
+def toggle_stellar_options(spec_type):
+    if spec_type == "WD":
+        return {"display": "block", "margin-bottom": "1rem"}
+    else:
+        return {"display": "none"}
 # Toggle visibility of entire option rows based on calculation type.
 @app.callback(
     Output("snr-options-row", "style"),
@@ -297,6 +356,8 @@ def toggle_calc_type_rows(calc_type):
     State("calc-type", "value"),
     State("spec-type", "value"),
     State("stellar-spectrum-dropdown", "value"),
+    State("Teff-dropdown", "value"),
+    State("logg-dropdown", "value"),
     State("bb-temp", "value"),
     State("ab-mag-renorm", "value"),
     State("n-tel", "value"),
@@ -312,7 +373,7 @@ def toggle_calc_type_rows(calc_type):
     State("overhead", "value"),
     State("snr-arr", "value")
 )
-def update_plot(n_clicks, calc_type, spec_type, stellar_type, bb_temp, ab_mag_renorm,
+def update_plot(n_clicks, calc_type, spec_type, stellar_type,Teff, logg, bb_temp, ab_mag_renorm,
                 n_tel, wl, n_tel_arr, n_tel_group, T_exp, sigma_limit, Type,
                 delta_sky, binning, T_norm, overhead_sec, SNR_arr):
     import importlib
@@ -336,8 +397,14 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, bb_temp, ab_mag_re
         parameters.stellar_type = stellar_type
     else:
         parameters.stellar_type = None
+    if spec_type == 'WD':
+        parameters.Teff = Teff
+        parameters.logg = logg
+    else:
+        parameters.Teff = None
+        parameters.logg = None
     fig = ETC.run_ETC()
     return fig
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(debug=True, host='0.0.0.0', port=8091)

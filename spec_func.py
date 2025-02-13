@@ -96,7 +96,7 @@ def generate_flat_spec_mag(lam, norm = 3631*1e-9):
 
 def generate_stellar_spec(lam,spec_type):
     import scipy.io
-    mat = scipy.io.loadmat(parameters.path_dic[spec_type])
+    mat = scipy.io.loadmat(parameters.stellar_path_dic[spec_type])
     k = spec_type.replace(' ','').lower()
     tab = mat[k]
     ltab = tab[:,0]
@@ -104,7 +104,19 @@ def generate_stellar_spec(lam,spec_type):
     spec = np.interp(lam,ltab,stab)
     return spec 
 
+def generate_WD_spec(lam,Teff,log_g):
+    '''
+    Generates white dwarf spectrum for a given temperature and surface gravity from the Koester (2010, Mem.S.A.It. Vol. 81, 921) models
+    IN:         lam - wavelength vector in Angstrom,
+                Teff - effective temperature in Kelvin,
+                log_g - log surface gravity
+    OUT:        spec - flux spectrum
 
+    '''
+    path = parameters.WD_path_dic[(Teff,log_g)]
+    orig = np.loadtxt(path)
+    spec = np.interp(lam,orig[:,0],orig[:,1])
+    return spec
 def spec_per_hour(SNR_target = 10, mag_analyze = np.linspace(14,20,25), overhead_sec = 300,Xin = [14,17]): 
     '''
     Calculates number of spectra per hour for a given SNR target and source brightness
@@ -174,13 +186,15 @@ def renorm_spec(lambda_arr, spec,mV_norm):
 
 
 
-def generate_spec(spec_type, stellar_type = None):
+def generate_spec(spec_type, stellar_type = None,Teff=None,log_g=None):
     if spec_type == 'bb':
         spec = bb_F(parameters.lam, parameters.bb_temp,r_cm = 1e14,d_cm = 1e24)
     elif spec_type == 'flat':
         spec = generate_flat_spec(parameters.lam)
     elif spec_type == 'stellar':
         spec = generate_stellar_spec(parameters.lam,stellar_type)
+    elif spec_type == 'WD':
+        spec = generate_WD_spec(parameters.lam,Teff,log_g)
     return spec
     
 

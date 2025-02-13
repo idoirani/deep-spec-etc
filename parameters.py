@@ -4,8 +4,11 @@ import numpy as np
 calc_type = 'SNR' #limmag|spec_per_hour|SNR
 
 #SNR
-spec_type = 'bb' #bb|flat|stellar
+spec_type = 'bb' #bb|flat|stellar|WD
 stellar_type = None
+Teff = None 
+logg = None
+
 bb_temp = 20000
 AB_mag_renorm = 19
 wl=5000 #wavelength for limiting magnitude
@@ -78,7 +81,7 @@ V_band = np.loadtxt('./johnson_v.txt',delimiter = ',')
 V_band[:,1] = V_band[:,1]/np.trapz(V_band[:,1],V_band[:,0])
 
 #paths for stellar spectra which can be selected in the GUI for SNR calculations
-path_dic = {'O5 V':'./PicklesStellarSpec/o5v.mat',
+stellar_path_dic = {'O5 V':'./PicklesStellarSpec/o5v.mat',
             'O9 V':'./PicklesStellarSpec/o9v.mat',
             'B0 V':'./PicklesStellarSpec/b0v.mat',
             'B1 V':'./PicklesStellarSpec/b1v.mat',
@@ -113,6 +116,18 @@ path_dic = {'O5 V':'./PicklesStellarSpec/o5v.mat',
             'M5 V':'./PicklesStellarSpec/m5v.mat',
             'M6 V':'./PicklesStellarSpec/m6v.mat'}
 
+import glob
+import os
+WD_names = glob.glob('./KoesterWDmodels/*.txt')
+WD_dic = {os.path.basename(x).split('.')[0]:x for x in WD_names}
+
+Teff = [int(key.split('_')[0].split('da')[1]) for key in WD_dic.keys()]
+logg = [float(key.split('_')[1].split('.')[0])/100 for key in WD_dic.keys()]
+
+base_names = list(WD_dic.keys())
+WD_path_dic = {(Teff[i],logg[i] ): WD_dic[base_names[i]] for i in range(len(base_names)) }
+
+
 #label details for the stellar spectra which can be selected in the GUI. 
-#Value corresponds to the key for path_dic, and label is what will be displayed in the GUI dropdown menu
+#Value corresponds to the key for stellar_path_dic, and label is what will be displayed in the GUI dropdown menu
                                 

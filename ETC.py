@@ -12,7 +12,7 @@ def run_ETC():
         # Assume plot_limmag_vs_exp_time returns a Plotly figure when show=False.
         fig = plot_limmag_vs_exp_time(parameters.T_exp_vec, wl_AA=parameters.wl, n_tel_arr=parameters.n_tel_arr, type=parameters.Type, sigma_limit = parameters.sigma_limit)
     elif parameters.calc_type == 'SNR':
-        spec = generate_spec(parameters.spec_type, stellar_type=parameters.stellar_type)
+        spec = generate_spec(parameters.spec_type, stellar_type=parameters.stellar_type, Teff = parameters.Teff, log_g = parameters.logg)
         spec_sim, SNR_proj = SNR_sequence(parameters.lam,
                                          spec, parameters.AB_mag_renorm,
                                          T_exp = parameters.T_norm,
