@@ -21,6 +21,7 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
 
 # Define the layout.
 app.layout = dbc.Container([
+    dcc.Store(id="window-size", data={}),
     # Title Frame: Displays the main title in a card.
     dbc.Row(
         dbc.Col(
@@ -62,7 +63,7 @@ app.layout = dbc.Container([
             dbc.Card([
                 dbc.CardBody(
                     dcc.Loading(
-                        dcc.Graph(id="graph-output", config={'responsive': True},style={"width": "100%"})
+                        dcc.Graph(id="graph-output", config={'responsive': True},style={"width": "100%", 'height':'400px'})
                     )
                 )
             ]),
@@ -506,6 +507,21 @@ def get_spec(spec_type, stellar_type= None, Teff = None, logg=None,uploaded_cont
                 print("There was an error processing the uploaded file:", e)
     return spec
 
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        // Return an object with the current window size
+        return {
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
+    }
+    """,
+    Output("window-size", "data"),
+    Input("refresh-button", "n_clicks")
+)
+
+
 
 # Callback: Update the Plot when the Refresh Plot button is clicked.
 @app.callback(
@@ -532,11 +548,12 @@ def get_spec(spec_type, stellar_type= None, Teff = None, logg=None,uploaded_cont
     State("t_snr", "value"),
     State("overhead", "value"),
     State("snr-arr", "value"),
-    State("upload-spectrum", "contents")
+    State("upload-spectrum", "contents"), 
+    State("window-size", "data")
 )
 def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_temp, ab_mag_renorm,
                 n_tel, wl, n_tel_arr, n_tel_group, T_exp, sigma_limit, Type,
-                delta_sky, binning, T_norm, overhead_sec, SNR_arr, uploaded_contents):
+                delta_sky, binning, T_norm, overhead_sec, SNR_arr, uploaded_contents, window_size):
     """
     Updates global parameters based on user inputs, runs the ETC calculation, and computes
     the maximum and average counts per pixel. If the maximum exceeds parameters.saturation,
@@ -571,13 +588,37 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
     parameters.binning = [int(x) for x in binning.strip('[]').split(',')]
     spec = get_spec(spec_type, stellar_type, Teff, logg,uploaded_contents)
     fig = ETC.run_ETC(spec)
-    fig.update_layout(autosize=True)
-    if calc_type == 'limmag':
+    fig.update_layout(
+        autosize=True,         # Automatically resize the figure to fill its container.
+        xaxis=dict(autorange=True),  # Automatically scale the x-axis.
+        yaxis=dict(autorange=True),   # Automatically scale the y-axis.
+        legend=dict(font=dict(size=14),
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1),
+    )
+    width = window_size.get("width", 1200)  # default if missing
+    is_mobile = (width < 768)
+    if is_mobile:
+        # Adjust the font size for mobile devices.
         fig.update_layout(
-            autosize=True,         # Automatically resize the figure to fill its container.
-            xaxis=dict(autorange=True),  # Automatically scale the x-axis.
-            yaxis=dict(autorange=True)   # Automatically scale the y-axis.
-        )
+            autosize=True,
+            font=dict(size=10),
+            margin=dict(l=30, r=30, t=40, b=30),
+            legend=dict(font=dict(size=10),
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1),
+            xaxis=dict(autorange=True,
+                tickfont=dict(size=10),
+                titlefont=dict(size=12)),
+            yaxis=dict(autorange=True,
+                tickfont=dict(size=10),
+                titlefont=dict(size=12)))
 
     # Compute saturation information by calling the helper function.
     sat_info_children, sat_info_style = compute_saturation_info()
