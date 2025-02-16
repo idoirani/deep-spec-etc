@@ -41,7 +41,7 @@ app.layout = dbc.Container([
             dbc.Card([
                 dbc.CardBody([
                     html.H5(
-                        "This is our BETA version, and is still under development and testing (updated 13/02/2024)",
+                        "This is our BETA version, and is still under development and testing (updated 17/02/2024)",
                         className="text-left",
                         style={"color": "red"}
                     ),
@@ -606,7 +606,7 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
         fig.update_layout(
             autosize=True,
             font=dict(size=10),
-            margin=dict(l=30, r=30, t=40, b=30),
+            margin=dict(l=15, r=15, t=60, b=20),
             legend=dict(font=dict(size=10),
                         orientation="h",
                         yanchor="bottom",
@@ -614,11 +614,11 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
                         xanchor="right",
                         x=1),
             xaxis=dict(autorange=True,
-                tickfont=dict(size=10),
-                titlefont=dict(size=12)),
+                tickfont=dict(size=7),
+                titlefont=dict(size=10)),
             yaxis=dict(autorange=True,
-                tickfont=dict(size=10),
-                titlefont=dict(size=12)))
+                tickfont=dict(size=7),
+                titlefont=dict(size=10)))
 
     # Compute saturation information by calling the helper function.
     sat_info_children, sat_info_style = compute_saturation_info()
