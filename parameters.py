@@ -10,7 +10,7 @@ Teff = None
 logg = None
 
 bb_temp = 20000
-AB_mag_renorm = 19
+AB_mag_renorm = 18
 wl=5000 #wavelength for limiting magnitude
 T_norm = 1200 #exposure time for SNR calc
 n_tel_group = 4 #number of telescopes observing the same target for SNR calculation
@@ -38,10 +38,10 @@ magnification = 42/25 #camera to fiber magnification
 fiber=25*magnification # projected fiber size in microns
 DC=0.0005 # Dark current 
 read_noise=2.9 # Read noise
-mu=13.5 #microns per detector pixels
-binning=[2,2] #pixel binning
-
-
+mu=13 #microns per detector pixels
+binning=[3,1] #pixel binning
+bias = 4000 #bias count in electrons
+saturation = 95000 #saturation count in electrons
 #telescope parameters 
 r_cm=61/2 #cm
 eff_area = np.pi*r_cm**2*0.95
@@ -75,7 +75,7 @@ d_lam=wl/R
 
 #plotting parameters
 T_exp_vec=10**np.linspace(0,np.log10(T_exp),100)
-lam = np.linspace(3700,9000,1500)
+lam = np.linspace(3700,9000,1800)
 vega_path = r"alpha_lyr_004.dat"
 V_band = np.loadtxt('./johnson_v.txt',delimiter = ',')
 V_band[:,1] = V_band[:,1]/np.trapz(V_band[:,1],V_band[:,0])
@@ -130,4 +130,4 @@ WD_path_dic = {(Teff[i],logg[i] ): WD_dic[base_names[i]] for i in range(len(base
 
 #label details for the stellar spectra which can be selected in the GUI. 
 #Value corresponds to the key for stellar_path_dic, and label is what will be displayed in the GUI dropdown menu
-                                
+counts = None                                

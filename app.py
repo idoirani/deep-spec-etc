@@ -68,6 +68,19 @@ app.layout = dbc.Container([
         ),
         className="mb-4"
     ),
+    # Saturation Info Frame: Shows max and average counts per pixel.
+    dbc.Row(
+        dbc.Col(
+            dbc.Card([
+                dbc.CardHeader("Saturation Information"),
+                dbc.CardBody(
+                    html.Div(id="saturation-info", children="No data yet")
+                )
+            ]),
+            width=8
+        ),
+        className="mb-4"
+    ),
     # Parameter Card Frame: Contains all parameter inputs grouped in several sections.
     dbc.Row(
         dbc.Col(
@@ -131,7 +144,8 @@ app.layout = dbc.Container([
                                             {"label": "Blackbody", "value": "bb"},
                                             {"label": "Flat in f_nu", "value": "flat"},
                                             {"label": "Pickels' Stellar Spectra", "value": "stellar"},
-                                            {"label": "Koester WD Models", "value": "WD"}
+                                            {"label": "Koester WD Models", "value": "WD"},
+                                            {"label": "Upload Spectrum", "value": "upload"}
 
                                         ],
                                         value=parameters.spec_type
@@ -202,10 +216,33 @@ app.layout = dbc.Container([
                                     ),
                                     md=4
                                 ),
+                                # Upload Spectrum: Shown only when spec-type == "upload"
+                                dbc.Col(
+                                    html.Div(
+                                        id="upload-spectrum-div",
+                                        children=[
+                                            dcc.Upload(
+                                                id='upload-spectrum',
+                                                children=html.Div([
+                                                    'Drag and Drop or ',
+                                                    html.A('Select a CSV/ASCII File')
+                                                ]),
+                                                style={
+                                                    'width': '100%', 'height': '60px',
+                                                    'lineHeight': '60px', 'borderWidth': '1px',
+                                                    'borderStyle': 'dashed', 'borderRadius': '5px',
+                                                    'textAlign': 'center'
+                                                },
+                                                multiple=False
+                                            )
+                                        ],
+                                        style={"display": "none"}
+                                    ),
+                                    md=4
+                                )
 
                             ], className="mb-2"),
-                            # Second row within SNR options: Exposure Time, V Band Magnitude, and number of telescopes.
-
+                            # Second row within SNR options: Exposure Time, V Band Magnitude, and number of telescopes.                   
                             dbc.Row([
                                 dbc.Col([
                                     html.Label("Exposure Time"),
@@ -350,6 +387,18 @@ def toggle_logg_options(spec_type):
         return {"display": "block", "margin-bottom": "1rem"}
     else:
         return {"display": "none"}
+
+# Callback: Toggle visibility of the Upload Spectrum component (only when spec-type is "upload").
+@app.callback(
+    Output("upload-spectrum-div", "style"),
+    Input("spec-type", "value")
+)
+def toggle_upload_spectrum(spec_type):
+    if spec_type == "upload":
+        return {"display": "block", "margin-bottom": "1rem"}
+    else:
+        return {"display": "none"}
+
 # Callback: Toggle visibility of entire option rows based on Calculation Type.
 @app.callback(
     Output("snr-options-row", "style"),
@@ -370,9 +419,95 @@ def toggle_calc_type_rows(calc_type):
     else:
         return hidden, hidden, hidden
 
+
+
+def compute_saturation_info():
+    """
+    Computes the maximum and average counts per pixel from parameters.counts.
+    
+    Returns:
+        - A dbc.Row containing two dbc.Card elements: one for max counts and one for average counts.
+        - A style dictionary for the saturation info container.
+    If an error occurs, returns a message indicating that saturation information is unavailable.
+    """
+    try:
+        counts = parameters.counts  # Assumes ETC.run_ETC() sets parameters.counts as a NumPy array.
+        max_counts = float(np.max(counts))
+        avg_counts = float(np.mean(counts))
+        max_box_style = {"textAlign": "center","color": "red"} if max_counts > parameters.saturation else {"textAlign": "center","color": "black"}
+        avg_box_style = {"textAlign": "center","color": "red"} if avg_counts > parameters.saturation else {"textAlign": "center","color": "black"}
+        row1 = dbc.Row([
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardHeader("Max counts per pixel"),
+                    dbc.CardBody(html.H6(f"{max_counts:.2f}", style=max_box_style))
+                ]),
+                md=6
+            ),
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardHeader("Avg counts per pixel"),
+                    dbc.CardBody(html.H6(f"{avg_counts:.2f}", style=avg_box_style))
+                ]),
+                md=6
+            )
+        ], className="mb-3")
+        if max_counts < parameters.saturation:
+            sat_info_children = row1
+        else: 
+            
+            row2 = dbc.Row([
+                dbc.Col(
+                    dbc.Card([
+                        dbc.CardBody(html.H6(f"Warning! Maximum counts over {parameters.saturation:,}. Expsoure may be affected by saturation", style={"textAlign": "center","color": "red"}))
+                    ]),
+                    md=12
+                )
+            ], className="mb-3")
+            sat_info_children = dbc.Container([row1, row2])
+
+        sat_style = {}
+    except Exception as e:
+        sat_info_children = "Saturation information unavailable."
+        sat_style = {"color": "black"}
+        print("Error computing saturation info:", e)
+    
+    return sat_info_children, sat_style
+
+def get_spec(spec_type, stellar_type= None, Teff = None, logg=None,uploaded_contents = None ):
+    '''
+    An auxiliry function that returns the spectrum based on the spec_type and other parameters.
+    '''
+    # Set the stellar type if applicable.
+    if spec_type == "stellar":
+        parameters.stellar_type = stellar_type
+    else:
+        parameters.stellar_type = None
+    # For WD models, set Teff and logg.
+    if spec_type == 'WD':
+        parameters.Teff = Teff
+        parameters.logg = logg
+    else:
+        parameters.Teff = None
+        parameters.logg = None
+    # Process uploaded spectrum if spec_type is "upload".
+    spec = None
+    if spec_type == "upload":
+        if uploaded_contents is not None:
+            import base64, io, pandas as pd
+            content_type, content_string = uploaded_contents.split(',')
+            decoded = base64.b64decode(content_string)
+            try:
+                # Assume CSV file; adjust delimiter if necessary.
+                spec = np.loadtxt(io.StringIO(decoded.decode('utf-8')))
+            except Exception as e:
+                print("There was an error processing the uploaded file:", e)
+    return spec
 # Callback: Update the Plot when the Refresh Plot button is clicked.
 @app.callback(
     Output("graph-output", "figure"),
+    Output("saturation-info", "children"),
+    Output("saturation-info", "style"),
     Input("refresh-button", "n_clicks"),
     State("calc-type", "value"),
     State("spec-type", "value"),
@@ -392,14 +527,21 @@ def toggle_calc_type_rows(calc_type):
     State("binning", "value"),
     State("t_snr", "value"),
     State("overhead", "value"),
-    State("snr-arr", "value")
+    State("snr-arr", "value"),
+    State("upload-spectrum", "contents")
 )
-def update_plot(n_clicks, calc_type, spec_type, stellar_type,Teff, logg, bb_temp, ab_mag_renorm,
+def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_temp, ab_mag_renorm,
                 n_tel, wl, n_tel_arr, n_tel_group, T_exp, sigma_limit, Type,
-                delta_sky, binning, T_norm, overhead_sec, SNR_arr):
+                delta_sky, binning, T_norm, overhead_sec, SNR_arr, uploaded_contents):
     """
-    Updates the global parameters based on user inputs and runs the ETC calculation.
-    Returns a Plotly figure generated by ETC.run_ETC().
+    Updates global parameters based on user inputs, runs the ETC calculation, and computes
+    the maximum and average counts per pixel. If the maximum exceeds parameters.saturation,
+    the returned style will turn the text red and include a warning message.
+    
+    Returns:
+        - A Plotly figure from ETC.run_ETC()
+        - A string with the saturation information.
+        - A style dictionary for the saturation info box.
     """
     import importlib
     importlib.reload(parameters)
@@ -417,31 +559,18 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type,Teff, logg, bb_temp
     parameters.Type = Type
     parameters.delta_sky = delta_sky
     parameters.Sky_brightness_surface_den = parameters.best_sky_brightness_surface_den + parameters.delta_sky 
-
     parameters.T_norm = T_norm
     parameters.overhead_sec = overhead_sec
     # Convert the comma-separated SNR values to a list of integers.
     parameters.SNR_arr = [int(x.strip()) for x in SNR_arr.split(',')]
     # Convert binning string "[x,y]" to a list of integers.
     parameters.binning = [int(x) for x in binning.strip('[]').split(',')]
-
-    # Set the stellar type if applicable.
-    if spec_type == "stellar":
-        parameters.stellar_type = stellar_type
-    else:
-        parameters.stellar_type = None
-    # For WD models, set Teff and logg (if spec_type is 'WD')
-
-    if spec_type == 'WD':
-        parameters.Teff = Teff
-        parameters.logg = logg
-    else:
-        parameters.Teff = None
-        parameters.logg = None
-    # Run the ETC calculations and return the resulting figure.
-
-    fig = ETC.run_ETC()
-    return fig
+    spec = get_spec(spec_type, stellar_type, Teff, logg,uploaded_contents)
+    fig = ETC.run_ETC(spec)
+    # Compute saturation information by calling the helper function.
+    sat_info_children, sat_info_style = compute_saturation_info()
+    
+    return fig, sat_info_children, sat_info_style
 
 if __name__ == "__main__":
     app.run_server(debug=True)

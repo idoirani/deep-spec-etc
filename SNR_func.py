@@ -55,7 +55,8 @@ def SNR_func(M_src,T_exp=500,
              r_cm=parameters.r_cm,
              bkg2src=parameters.bkg2src,
              N_pack=1,binning=[1,1],
-             wl_AA=parameters.wl):
+             wl_AA=parameters.wl,
+             bias = parameters.bias):
     '''
     Calculates SNR for a given source brightness and telescope/spectrograph parameters
     IN:         M_src - source brightness in AB mag, 
@@ -75,13 +76,14 @@ def SNR_func(M_src,T_exp=500,
                 N_pack - number of MAST arrays, 
                 binning - pixel binning factor (2 element list, [binX,binY]), 
                 wl_AA - wavelength in Angstrom
+                bias - bias count in electrons
     OUT:        SNR - signal to noise ratio
                 noise_comp - array of noise components (source,backround,dark current, read noise)
-    '''
+                N_total_pixel - total number of photons per pixel
 
-    w=math.ceil(fiber/mu)
-    if w<3:
-        w=3
+    '''
+    w=fiber/mu
+
     fill_factor=1 #ratio of used to unused pixels which are read out
 
     N_pix_tot=n_tel*w**2*(1/fill_factor)
@@ -92,15 +94,27 @@ def SNR_func(M_src,T_exp=500,
     N2_Dark=N_pix_tot*DC*T_exp
 
     pixel_sky_mag=Sky_bkg_density_per_pixel(mu,Sky_brightness,f_mm=parameters.f_mm)
+
     N_bkg=eff*n_tel*N_phot_in_element(pixel_sky_mag,T_exp=T_exp,d_lam=d_lam,r_cm=r_cm,wl_AA=wl_AA)
     N_src=eff*n_tel*N_phot_in_element(M_src,T_exp=T_exp,d_lam=d_lam,r_cm=r_cm,wl_AA=wl_AA)
+
+    #total counts per resolution element
+    N_total_element    =  eff*N_phot_in_element(M_src,T_exp=T_exp,d_lam=d_lam,r_cm=r_cm,wl_AA=wl_AA)
+    N_total_element   +=  eff*N_phot_in_element(pixel_sky_mag,T_exp=T_exp,d_lam=d_lam,r_cm=r_cm,wl_AA=wl_AA)
+    N_total_element   +=  DC*T_exp
+    
+    #total counts per pixel, accounting for binning and total number of pixels in element
+    N_total_pixel   =  N_total_element/(w**2*(1/fill_factor))
+    #add bias counts
+    N_total_pixel   += bias
+    N_total_pixel   *= bin_factor
 
     noise=np.sqrt(N_src+(1+1/bkg2src)*(N_bkg+N2_Dark+N2_readout_Gain))
     SNR=N_src/noise
     SNR=SNR*np.sqrt(N_pack)
 
     noise_comp=[N_src,(1+1/bkg2src)*N_bkg, (1+1/bkg2src)*N2_Dark, (1+1/bkg2src)*N2_readout_Gain]
-    return SNR, noise_comp
+    return SNR, noise_comp, N_total_pixel
 
 
 
@@ -152,7 +166,7 @@ def find_limiting_mag(T_vec,
                 sol=newton_krylov(f,xin=xin-3,f_tol=1e-2)
         except:
             sol=newton_krylov(f,xin=xin+3,f_tol=1e-2)
-        _ , noise_comp =f_SNR(M_src=sol,T_exp=T_vec,n_tel=n_tel,mu=mu,fiber = fiber,Sky_brightness=Sky_brightness,N_pack=N_pack,binning=binning,wl_AA=wl_AA, d_lam=d_lam, eff = Eff,  Read = read_noise)
+        _ , noise_comp, _ =f_SNR(M_src=sol,T_exp=T_vec,n_tel=n_tel,mu=mu,fiber = fiber,Sky_brightness=Sky_brightness,N_pack=N_pack,binning=binning,wl_AA=wl_AA, d_lam=d_lam, eff = Eff,  Read = read_noise)
     else:
         sol=[]
         noise_comp=np.empty_like(np.array([0,0,0,0]))
@@ -207,7 +221,8 @@ def SNR_in_wl_array(lam_array,
                     M_src_array,
                     T_exp,binning=[1,1], 
                     n_tel = 20, 
-                    Sky_brightness= parameters.Sky_brightness_surface_den):
+                    Sky_brightness= parameters.Sky_brightness_surface_den,
+                    Type = 'per pixel'):
     '''
     Calculates SNR for pairs of source brightness and wavelengths provided as arrays. Uses the as built throughput and resolution at the specified wavelengths to calculate the SNR
     IN:         lam_array - wavelength array,
@@ -217,22 +232,32 @@ def SNR_in_wl_array(lam_array,
                 n_tel - number of telescopes in array
                 Sky_brightness - sky brightness surface density in AB mag/sq arcsec
     OUT:        SNR_array - array of SNR values of the same length as lam_array and M_src_array
+                counts_array - total counts per pixel
     '''
     SNR_array = np.zeros_like(lam_array)
+    counts_array = np.zeros_like(lam_array)
     for i,lam in enumerate(lam_array):
         M_src = M_src_array[i]
         R_lam =  np.interp(lam,parameters.res_wl['lambda'],parameters.res_wl['Res_25um'])
         Eff_lam = np.interp(lam,parameters.throughput['lambda'],parameters.throughput['Eff_tot'])
         d_l=lam/R_lam
-        SNR_array[i] = SNR_func(M_src,
+        SNR_array[i], _, counts_array[i]  = SNR_func(M_src,
                                 T_exp=T_exp, 
                                 Sky_brightness=Sky_brightness,
                                 eff=Eff_lam,
                                 binning=binning,
                                 wl_AA=lam, 
                                 d_lam = d_l, 
-                                n_tel = n_tel)[0]
-    return SNR_array
+                                n_tel = n_tel)
+    if Type == 'per pixel':
+        SNR_array = SNR_array/np.sqrt(parameters.fiber/parameters.mu/parameters.binning[1])
+    elif Type == 'per element':
+        SNR_array = SNR_array
+    else: 
+        raise ValueError('Type not recognized')
+
+
+    return SNR_array, counts_array
 
 def create_limmag_sequence(n_tel_arr = [1,4,20], type = 'per pixel',wl_AA=5500):
     '''
@@ -244,7 +269,7 @@ def create_limmag_sequence(n_tel_arr = [1,4,20], type = 'per pixel',wl_AA=5500):
 
     '''
 
-    pixel_factor = parameters.fiber//parameters.mu/parameters.binning[1]
+    pixel_factor = parameters.fiber/parameters.mu/parameters.binning[1]
     Xin = [14,17]
     if type == 'per pixel':
        sigma_factor= np.sqrt(pixel_factor)

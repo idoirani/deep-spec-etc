@@ -13,6 +13,18 @@ import plotly.express as px
 from SNR_func import *
 
 ## spectrum functions
+
+
+def smooth_spec(spec, kernal = 2):
+    '''
+    Smooths spectrum with a moving average
+    IN:         spec - flux spectrum,
+                kernal - smoothing kernal
+    OUT:        spec_smooth - smoothed spectrum
+    '''
+    spec_smooth = np.convolve(spec, np.ones(kernal)/kernal, mode='same')
+    return spec_smooth
+
 def bb_F(lam_AA,T_K,r_cm = 1e14,d_cm = 3.08e19):
     '''
     Calculates blackbody flux for a given wavelength, temperature, radius and distance
@@ -94,17 +106,21 @@ def generate_flat_spec_mag(lam, norm = 3631*1e-9):
     return m_array 
 
 
-def generate_stellar_spec(lam,spec_type):
+def generate_stellar_spec(lam,spec_type,dlam_final = 12):
     import scipy.io
     mat = scipy.io.loadmat(parameters.stellar_path_dic[spec_type])
     k = spec_type.replace(' ','').lower()
     tab = mat[k]
     ltab = tab[:,0]
     stab = tab[:,1]
+    dlam = np.mean(np.diff(ltab))
+    ker = dlam_final//dlam
+    if ker>1: 
+        stab = smooth_spec(stab)
     spec = np.interp(lam,ltab,stab)
     return spec 
 
-def generate_WD_spec(lam,Teff,log_g):
+def generate_WD_spec(lam,Teff,log_g, dlam_final = 12):
     '''
     Generates white dwarf spectrum for a given temperature and surface gravity from the Koester (2010, Mem.S.A.It. Vol. 81, 921) models
     IN:         lam - wavelength vector in Angstrom,
@@ -115,8 +131,27 @@ def generate_WD_spec(lam,Teff,log_g):
     '''
     path = parameters.WD_path_dic[(Teff,log_g)]
     orig = np.loadtxt(path)
-    spec = np.interp(lam,orig[:,0],orig[:,1])
+    ltab = orig[:,0]
+    stab = orig[:,1]
+    dlam = np.mean(np.diff(ltab))
+    ker = dlam_final//dlam
+    if ker>1: 
+        stab = smooth_spec(stab)
+    spec = np.interp(lam,ltab,stab)
     return spec
+
+def prep_user_spec(spec, dlam_final = 12):
+    if np.shape(spec)[0]<np.shape(spec)[1]:
+        spec = spec.T
+    ltab = spec[:,0]
+    stab = spec[:,1]
+    dlam = np.mean(np.diff(ltab))
+    ker = dlam_final//dlam
+    if ker>1: 
+        stab = smooth_spec(stab)
+    spec = np.interp(parameters.lam, ltab, stab)
+    return spec
+
 def spec_per_hour(SNR_target = 10, mag_analyze = np.linspace(14,20,25), overhead_sec = 300,Xin = [14,17]): 
     '''
     Calculates number of spectra per hour for a given SNR target and source brightness
@@ -185,8 +220,7 @@ def renorm_spec(lambda_arr, spec,mV_norm):
 
 
 
-
-def generate_spec(spec_type, stellar_type = None,Teff=None,log_g=None):
+def generate_spec(spec_type, stellar_type = None,Teff=None,log_g=None, spec_input = None):
     if spec_type == 'bb':
         spec = bb_F(parameters.lam, parameters.bb_temp,r_cm = 1e14,d_cm = 1e24)
     elif spec_type == 'flat':
@@ -195,6 +229,7 @@ def generate_spec(spec_type, stellar_type = None,Teff=None,log_g=None):
         spec = generate_stellar_spec(parameters.lam,stellar_type)
     elif spec_type == 'WD':
         spec = generate_WD_spec(parameters.lam,Teff,log_g)
+
     return spec
     
 
@@ -205,7 +240,7 @@ def SNR_sequence(lam,
                  T_exp = parameters.T_norm,
                  binning=parameters.binning, 
                  n_tel=parameters.n_tel_group, 
-                 Sky_brightness= parameters.Sky_brightness_surface_den):
+                 Sky_brightness= parameters.Sky_brightness_surface_den, Type = parameters.Type):
     '''
     Generates the projected SNR array and a simulated spectrum for a set of exposure and target parameters
     IN:         lam - wavelength vector in Angstrom,
@@ -215,6 +250,7 @@ def SNR_sequence(lam,
                 binning - pixel binning,
                 n_tel - number of telescopes,
                 Sky_brightness - sky brightness in mag/arcsec^2
+                Type - 'per pixel' or 'per resolution element'
 
     OUT:        spec_sim - simulated spectrum,
                 SNR_proj - projected SNR array
@@ -222,9 +258,9 @@ def SNR_sequence(lam,
     
     renormed_spec = renorm_spec(lam, spec,AB_mag_renorm)
     renormed_magspec = flux_vec_to_mag(lam,renormed_spec)
-    SNR_proj = SNR_in_wl_array(lam, renormed_magspec,T_exp = T_exp,binning=binning, n_tel=n_tel, Sky_brightness= Sky_brightness)
+    SNR_proj, total_counts = SNR_in_wl_array(lam, renormed_magspec,T_exp = T_exp,binning=binning, n_tel=n_tel, Sky_brightness= Sky_brightness, Type = Type)
     noise = np.random.normal(size =np.size(renormed_spec) )/SNR_proj
     noise = np.random.normal(size =np.size(renormed_spec) )/SNR_proj
     spec_err = renormed_spec * noise
     spec_sim = renormed_spec+spec_err
-    return spec_sim, SNR_proj
+    return spec_sim, SNR_proj, total_counts
