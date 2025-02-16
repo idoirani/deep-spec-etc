@@ -29,7 +29,7 @@ app.layout = dbc.Container([
                     html.H1("MAST/DeepSpec SNR Calculator", className="text-center")
                 )
             ]),
-            width=8
+            xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
         ),
         className="mb-4"
     ),
@@ -52,7 +52,7 @@ app.layout = dbc.Container([
                     )
                 ])
             ]),
-            width=8
+            xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
         ),
         className="mb-4"
     ),
@@ -62,11 +62,11 @@ app.layout = dbc.Container([
             dbc.Card([
                 dbc.CardBody(
                     dcc.Loading(
-                        dcc.Graph(id="graph-output", config={'responsive': True})
+                        dcc.Graph(id="graph-output", config={'responsive': True},style={"width": "100%"})
                     )
                 )
             ]),
-            width=8
+            xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
         ),
         className="mb-4"
     ),
@@ -79,7 +79,7 @@ app.layout = dbc.Container([
                     html.Div(id="saturation-info", children="No data yet")
                 )
             ]),
-            width=8
+            xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
         ),
         className="mb-4"
     ),
@@ -336,7 +336,7 @@ app.layout = dbc.Container([
                     
                 ])
             ]),
-            width=8
+            xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
         )
     )
 ], fluid=True)
@@ -505,6 +505,8 @@ def get_spec(spec_type, stellar_type= None, Teff = None, logg=None,uploaded_cont
             except Exception as e:
                 print("There was an error processing the uploaded file:", e)
     return spec
+
+
 # Callback: Update the Plot when the Refresh Plot button is clicked.
 @app.callback(
     Output("graph-output", "figure"),
@@ -569,10 +571,20 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
     parameters.binning = [int(x) for x in binning.strip('[]').split(',')]
     spec = get_spec(spec_type, stellar_type, Teff, logg,uploaded_contents)
     fig = ETC.run_ETC(spec)
+    fig.update_layout(autosize=True)
+    if calc_type == 'limmag':
+        fig.update_layout(
+            autosize=True,         # Automatically resize the figure to fill its container.
+            xaxis=dict(autorange=True),  # Automatically scale the x-axis.
+            yaxis=dict(autorange=True)   # Automatically scale the y-axis.
+        )
+
     # Compute saturation information by calling the helper function.
     sat_info_children, sat_info_style = compute_saturation_info()
     
+
     return fig, sat_info_children, sat_info_style
+
 
 if __name__ == "__main__":
     app.run_server(debug=True)
