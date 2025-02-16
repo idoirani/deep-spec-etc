@@ -61,7 +61,9 @@ app.layout = dbc.Container([
         dbc.Col(
             dbc.Card([
                 dbc.CardBody(
-                    dcc.Graph(id="graph-output", config={'responsive': True})
+                    dcc.Loading(
+                        dcc.Graph(id="graph-output", config={'responsive': True})
+                    )
                 )
             ]),
             width=8
