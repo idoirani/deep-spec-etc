@@ -15,7 +15,6 @@ import dash_bootstrap_components as dbc
 import parameters  # Module containing default parameters
 import ETC         # Module that runs the ETC calculations and returns a Plotly figure
 import numpy as np 
-from dash_extensions.snippets import send_file
 
 # Initialize the Dash app with Bootstrap CSS and mobile-friendly meta tags.
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
@@ -50,7 +49,7 @@ app.layout = dbc.Container([
                     # Explanation text in black on a new line.
 
                     html.P(
-                        "The calculations in this ETC are based on the as-built wavelength dependent resolution, and estimated end-to-end throughput of DeepSpec coupled to the MAST array, and assuming no slit losses (see https://ui.adsabs.harvard.edu/abs/2024SPIE13094E..53I/abstract). For comments and questions, please contact idoirani@gmail.com. ",
+                        "The calculations in this ETC are based on the as-built wavelength dependent resolution, and estimated end-to-end throughput of DeepSpec coupled to the MAST array, and assuming no slit losses (see https://ui.adsabs.harvard.edu/abs/2024SPIE13094E..53I/abstract). For comments and questions, please contact idoirani@gmail.com. For detailed instructions, see below. ",
                         style={"color": "black", "textAlign": "left"}
                     )
                 ])
@@ -59,6 +58,7 @@ app.layout = dbc.Container([
         ),
         className="mb-4"
     ),
+
     # Graph Frame: Displays the Plotly graph in its own card.
     dbc.Row(
         dbc.Col(
@@ -99,7 +99,7 @@ app.layout = dbc.Container([
                         html.Div(
                             [
                                 html.Button(
-                                    "Save As", 
+                                    "Save Output As", 
                                     id="save-button", 
                                     n_clicks=0, 
                                     style={"width": "200px", "height": "50px", "fontSize": "20px"}
@@ -366,6 +366,10 @@ app.layout = dbc.Container([
                                 dbc.Col([
                                     html.Label("SNR limits"),
                                     dcc.Input(id="snr-arr", type="text", value="10,20,50")
+                                ], md=4),
+                                dbc.Col([
+                                    html.Label("Wavelength (Ang)"),
+                                    dcc.Input(id="wl", type="number", value=parameters.wl, min=3700,max = 9000, step = 1)
                                 ], md=4)
                             ])
                         ]),
@@ -378,7 +382,33 @@ app.layout = dbc.Container([
             xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
         )
     ),
-       
+    dbc.Row(
+        dbc.Col(
+            dbc.Card([
+                dbc.CardBody([
+                    dbc.CardHeader("How to use this ETC"),
+                    html.P(
+                        "This exposure time calculator provides 3 types of outputs, accesed through the Calculation Type field below. Any output from this calculator can be saved as a .txt file form the utility.",
+                        style={"color": "black", "textAlign": "left"}
+                    ),
+                    html.P(
+                        "(1) SNR calculator: This calculator allows the user to estimate the wavalength dependent SNR for different observing parameters and based on the spectrum and brightness of the source. For MAST/DeepSpec, multiple telescopes may observe the target simultanously, acting as individual exposures summed in post-processing. The SNR provided here is reported per spectral pixel (i.e., assuming the trace is summed in the direction perpendicular to the dispersion axis). For per-resolution element based SNR, the user may use [3,3] binning. The user should be advised that some of the spectra provided in this calculator are observations with some noise associated with them.",
+                        style={"color": "black", "textAlign": "left"}
+                    ),
+                    html.P(
+                        "(2) Limiting magnitude: This calculator allows the user to estimate the limiting magnitude to reach a user provided SNR, at a specific wavelength. The calculation accounts for the resolution and throughput at the specified wavelength, and is calculated for different grouping of telescopes provided by the user. ",
+                        style={"color": "black", "textAlign": "left"}
+                    ),
+                    html.P(
+                        "(3) Spectra-per-hour: This is a servey planning utility allows the user to estimate the rate of spectra acquisition as a function of source brighntess for different target SNRs.",
+                        style={"color": "black", "textAlign": "left"}
+                    ),
+                ])
+            ]),
+            xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
+        ),
+        className="mb-4"
+    ),       
 
     # Hidden download component
     dcc.Download(id="download")
