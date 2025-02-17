@@ -10,7 +10,7 @@ def run_ETC(spec = None):
     """
     if parameters.calc_type == 'limmag':
         # Assume plot_limmag_vs_exp_time returns a Plotly figure when show=False.
-        fig = plot_limmag_vs_exp_time(parameters.T_exp_vec, wl_AA=parameters.wl, n_tel_arr=parameters.n_tel_arr, type=parameters.Type, sigma_limit = parameters.sigma_limit)
+        fig, out, header = plot_limmag_vs_exp_time(parameters.T_exp_vec, wl_AA=parameters.wl, n_tel_arr=parameters.n_tel_arr, type=parameters.Type, sigma_limit = parameters.sigma_limit)
     elif parameters.calc_type == 'SNR':
         if spec is None:
             spec = generate_spec(parameters.spec_type, stellar_type=parameters.stellar_type, Teff = parameters.Teff, log_g = parameters.logg)
@@ -26,14 +26,37 @@ def run_ETC(spec = None):
                                          Sky_brightness= parameters.Sky_brightness_surface_den
                                          , Type = parameters.Type)
         parameters.counts = total_counts
-        fig = plot_SNR_simspec(parameters.lam, spec_sim, SNR_proj)
+        fig, out, header = plot_SNR_simspec(parameters.lam, spec_sim, SNR_proj)
     elif parameters.calc_type == 'spec_per_hour':
-        fig = plot_spec_per_hour(parameters.mag_analyze, SNR=parameters.SNR_arr)
+        fig, out, header = plot_spec_per_hour(parameters.mag_analyze, SNR=parameters.SNR_arr)
     else:
         raise ValueError("calc_type not recognized")
-    return fig
+    parameters.output = out
+    parameters.header = header
+
+    return fig, out, header
+
+def save_output(output, header, path):
+    """
+    Saves the output of the ETC to a text file. writes the header line by line and then writes the array line by line
+    """
+    with open(path, "w") as f:
+        f.write('#DeepSpec/MAST ETC output generator \n')
+        f.write('#By Ido Irani \n')
+        for key in header.keys():
+            f.write('#'+ key + ':' + str(header[key])+'\n')
+        for i in range(np.shape(output)[0]):
+            line = output[i,:]
+            string = f"{line[0]:.4g}"
+            for i in range(1,len(line)):
+                string += f",{line[i]:.4g}"
+            string += "\n"
+            f.write(string)
+    pass   
+
+
 
 if __name__ == '__main__':
     # For debugging outside Dash.
-    fig = run_ETC()
+    fig, output,header = run_ETC()
     fig.show()

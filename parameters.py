@@ -4,12 +4,12 @@ import numpy as np
 calc_type = 'SNR' #limmag|spec_per_hour|SNR
 
 #SNR
-spec_type = 'bb' #bb|flat|stellar|WD
+spec_type = 'bb' #bb|flat|stellar|WD|upload
 stellar_type = None
 Teff = None 
 logg = None
-
 bb_temp = 20000
+
 AB_mag_renorm = 18
 wl=5000 #wavelength for limiting magnitude
 T_norm = 1200 #exposure time for SNR calc
@@ -130,4 +130,6 @@ WD_path_dic = {(Teff[i],logg[i] ): WD_dic[base_names[i]] for i in range(len(base
 
 #label details for the stellar spectra which can be selected in the GUI. 
 #Value corresponds to the key for stellar_path_dic, and label is what will be displayed in the GUI dropdown menu
-counts = None                                
+counts = None      
+output = None 
+header = None

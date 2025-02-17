@@ -15,6 +15,8 @@ import dash_bootstrap_components as dbc
 import parameters  # Module containing default parameters
 import ETC         # Module that runs the ETC calculations and returns a Plotly figure
 import numpy as np 
+from dash_extensions.snippets import send_file
+
 # Initialize the Dash app with Bootstrap CSS and mobile-friendly meta tags.
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
                 meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}])
@@ -63,7 +65,7 @@ app.layout = dbc.Container([
             dbc.Card([
                 dbc.CardBody(
                     dcc.Loading(
-                        dcc.Graph(id="graph-output", config={'responsive': True},style={"width": "100%", 'height':'400px'})
+                        dcc.Graph(id="graph-output", config={'responsive': True},style={"width": "100%"})
                     )
                 )
             ]),
@@ -71,6 +73,49 @@ app.layout = dbc.Container([
         ),
         className="mb-4"
     ),
+    
+    dbc.Row(
+        [
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody(
+                        html.Div(
+                            html.Button(
+                                "Refresh Plot", 
+                                id="refresh-button", 
+                                n_clicks=0, 
+                                style={"width": "200px", "height": "50px", "fontSize": "20px"}
+                            ),
+                            style={"textAlign": "center"}
+                        )
+                    )
+                ]),
+                xs=6, sm=6, md=4
+            ),
+
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody(
+                        html.Div(
+                            [
+                                html.Button(
+                                    "Save As", 
+                                    id="save-button", 
+                                    n_clicks=0, 
+                                    style={"width": "200px", "height": "50px", "fontSize": "20px"}
+                                ),
+                                html.Div(id="save-status", children="", style={"marginTop": "10px"})
+                            ],
+                            style={"textAlign": "center"}
+                        )
+                    )
+                ]),
+                xs=6, sm=6, md=4
+            ),
+        ],
+        className="mb-4"
+    ),    
+    
     # Saturation Info Frame: Shows max and average counts per pixel.
     dbc.Row(
         dbc.Col(
@@ -319,7 +364,7 @@ app.layout = dbc.Container([
                                     dcc.Input(id="overhead", type="number", value=parameters.overhead_sec, min=1,max = 1000, step = 1)
                                 ], md=4),
                                 dbc.Col([
-                                    html.Label("SNR Array"),
+                                    html.Label("SNR limits"),
                                     dcc.Input(id="snr-arr", type="text", value="10,20,50")
                                 ], md=4)
                             ])
@@ -328,18 +373,15 @@ app.layout = dbc.Container([
                         className="mb-3"
                     ),
                     
-                    dbc.Row(
-                        dbc.Col(
-                            html.Button("Refresh Plot", id="refresh-button", n_clicks=0),
-                            width={"size": 4, "offset": 4}
-                        )
-                    )
-                    
                 ])
             ]),
             xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
         )
-    )
+    ),
+       
+
+    # Hidden download component
+    dcc.Download(id="download")
 ], fluid=True)
 
 # --- Callbacks ---
@@ -523,6 +565,55 @@ app.clientside_callback(
 
 
 
+def build_download_object(path, filename):
+    """
+    Reads the file at `path` and returns a dictionary with the keys required for dcc.Download.
+    
+    Returns a dictionary with:
+      - "filename": the name of the file,
+      - "content": the file content as a base64 encoded string,
+      - "base64": True,
+      - "type": the MIME type (e.g., "text/plain").
+    """
+    import base64
+    with open(path, "rb") as f:
+        content = f.read()
+    return {
+        "filename": filename,
+        "content": base64.b64encode(content).decode("utf-8"),
+        "base64": True,
+        "type": "text/plain"
+    }
+
+
+@app.callback(
+    Output("download", "data"),
+    Output("save-status", "children"),
+    Input("save-button", "n_clicks"),
+    prevent_initial_call=True
+)
+def save_output_callback(n_clicks):
+    """
+    When the Save As button is clicked, this callback uses ETC.save_output to
+    generate the file content and then triggers a download. The file content is
+    returned as a downloadable file.
+    
+    Returns:
+        - The downloadable file data.
+        - A status message indicating success or error.
+    """
+    if n_clicks > 0:
+        try:
+            path = "C:/Users/idoi/Dropbox\MAST/Deep_Spec/ETC API/output.txt"
+            ETC.save_output(parameters.output, parameters.header, path)
+            download_data = build_download_object(path, "ETC_output.txt")
+
+            # Use send_file with valid keys. Set type to "text/plain".
+            return download_data, "Output saved successfully as ETC_output.txt."
+        except Exception as e:
+            return dash.no_update, f"Error saving output: {e}"
+
+
 # Callback: Update the Plot when the Refresh Plot button is clicked.
 @app.callback(
     Output("graph-output", "figure"),
@@ -587,7 +678,7 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
     # Convert binning string "[x,y]" to a list of integers.
     parameters.binning = [int(x) for x in binning.strip('[]').split(',')]
     spec = get_spec(spec_type, stellar_type, Teff, logg,uploaded_contents)
-    fig = ETC.run_ETC(spec)
+    fig, out, header = ETC.run_ETC(spec)
     fig.update_layout(
         autosize=True,         # Automatically resize the figure to fill its container.
         xaxis=dict(autorange=True),  # Automatically scale the x-axis.
@@ -630,3 +721,5 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
 if __name__ == "__main__":
     app.run_server(debug=True)
     #app.run_server(debug=True, host='0.0.0.0', port=8091)
+
+

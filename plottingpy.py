@@ -35,10 +35,29 @@ def plot_limmag_vs_exp_time(T_exp_vec,
     limmag = create_limmag_sequence(n_tel_arr = n_tel_arr, type = type, wl_AA=wl_AA)
     R =  np.interp(wl_AA,parameters.res_wl['lambda'],parameters.res_wl['Res_25um'])
     R = int(R)
-    
+    l = [T_exp_vec]
+    header = {'calc_type':'Limiting magnitude',
+              'n_tel':n_tel_arr,
+              'binning':binning,
+              'type':type,
+              'wl_AA':wl_AA,
+              'sigma_limit':sigma_limit,
+              'Avg. resolution':R,
+              'SNR type': type,
+              'Sky brightness': parameters.Sky_brightness_surface_den,
+              'col1':'T_exp'}
+    for i,n in enumerate(n_tel_arr):
+        l.append(limmag[n_tel_arr[i]])
+        key = 'col'+str(i+1)
+        header[key] = f'limmag for n_tel = {n}'
+
+    output = np.array(l).T
+
+
     # Create a Plotly figure.
     fig = go.Figure()
     for n in n_tel_arr:
+
         fig.add_trace(go.Scatter(
             x=T_exp_vec,
             y=limmag[n],
@@ -95,7 +114,7 @@ def plot_limmag_vs_exp_time(T_exp_vec,
         margin=dict(l=80, r=80, t=80, b=80)
     )
 
-    return fig
+    return fig, output, header
 
 
 def plot_SNR_simspec(lam, simspec, SNR_proj):
@@ -114,6 +133,23 @@ def plot_SNR_simspec(lam, simspec, SNR_proj):
     The left (primary) y-axis corresponds to the simulated flux (red),
     and the right (secondary) y-axis corresponds to the SNR (blue).
     """
+    out = np.array([lam,simspec, SNR_proj]).T
+    header = {'calc_type':'SNR/simulated spectrum',
+              'n_tel':parameters.n_tel_group,
+              'binning':parameters.binning,
+              'T_exp': parameters.T_norm,
+              'SNR type': 'per pixel',
+              'Sky brightness': parameters.Sky_brightness_surface_den, 
+              'V_mag_source': parameters.AB_mag_renorm
+              ,'spec_type': parameters.spec_type}
+    if parameters.spec_type == 'bb':
+        header['T_bb'] = parameters.bb_temp
+    elif parameters.spec_type == 'WD':
+        header['Teff'] = parameters.Teff
+        header['logg'] = parameters.logg
+    elif parameters.spec_type == 'stellar':
+        header['stellar_type'] = parameters.stellar_type
+
     # Compute y-limits for the simulated spectrum using points where SNR > 3.
     mask = SNR_proj > 3
     if np.any(mask):
@@ -167,7 +203,7 @@ def plot_SNR_simspec(lam, simspec, SNR_proj):
     )
 
     # Display the figure if requested.
-    return fig
+    return fig, out, header
 
 
 def plot_spec_per_hour(mag_analyze, SNR = [10,20,50], overhead_sec = 300):
@@ -182,10 +218,21 @@ def plot_spec_per_hour(mag_analyze, SNR = [10,20,50], overhead_sec = 300):
     # Compute spectra per hour for various SNR targets.
     SNR_per_hour = {}
     fig = go.Figure()
+    out = [mag_analyze]
 
     for snr in SNR:
         s_per_hour, _, _ = spec_per_hour(SNR_target=snr, mag_analyze=mag_analyze, overhead_sec=overhead_sec)
         SNR_per_hour[snr] = s_per_hour
+        out.append(s_per_hour)
+    out = np.array(out).T
+    header = {'calc_type':'Spectra per hour',
+              'n_tel':parameters.n_tel,
+              'binning':parameters.binning,
+              'overhead': overhead_sec,
+              'SNR type': 'per element',
+              'Sky brightness': parameters.Sky_brightness_surface_den, 
+              'sigma limit': SNR}
+
     # Create a Plotly figure.
     for snr in SNR:
     # Add traces for the different SNR targets.
@@ -195,7 +242,7 @@ def plot_spec_per_hour(mag_analyze, SNR = [10,20,50], overhead_sec = 300):
             mode='lines',
             name=str(snr)+'σ'
         ))
-
+    
 
     # Determine the x-axis limits from the provided magnitude data.
     x_min = np.min(mag_analyze)
@@ -223,7 +270,7 @@ def plot_spec_per_hour(mag_analyze, SNR = [10,20,50], overhead_sec = 300):
             tickfont=dict(size=20)
         ),
         yaxis=dict(
-            title=dict(text='spectra/hour', font=dict(size=20)),
+            title=dict(text='Spectra/hour', font=dict(size=20)),
             type='log',
             # Specify the range in log10 space: [log10(min), log10(max)]
             range=[np.log10(0.9), np.log10(300)],
@@ -234,7 +281,7 @@ def plot_spec_per_hour(mag_analyze, SNR = [10,20,50], overhead_sec = 300):
     )
 
     # Display the figure.
-    return fig
+    return fig, out, header
 
 
 ### not implemented in the ETC
