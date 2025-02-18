@@ -134,8 +134,6 @@ def plot_limmag_vs_exp_time(T_exp_vec,
             showgrid=False
         ),
         legend=dict(font=dict(size=20)),
-        width=1000,
-        height=800,
         margin=dict(l=80, r=80, t=80, b=80)
     )
 
@@ -311,8 +309,6 @@ def plot_spec_per_hour(mag_analyze, SNR = [10,20,50], overhead_sec = 300):
 
     # Update the layout with logarithmic y-axis.
     fig.update_layout(
-        width=1000,
-        height=800,
         title=dict(text='Spectra per Hour', font=dict(size=20)),
         xaxis=dict(
             title=dict(text='V band brightness [AB mag]', font=dict(size=20)),

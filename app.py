@@ -34,8 +34,12 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
 
 # Define the layout.
 app.layout = dbc.Container([
+    # Store for window size and mobile flag.
     dcc.Store(id="window-size", data={}),
     dcc.Store(id="is-mobile-store", data=False),
+    # Interval to trigger mobile detection on page load.
+    dcc.Interval(id="interval", interval=1000, n_intervals=0, max_intervals=1),
+
     # Title Frame: Displays the main title in a card.
     dbc.Row(
         dbc.Col(
@@ -77,8 +81,14 @@ app.layout = dbc.Container([
         dbc.Col(
             dbc.Card([
                 dbc.CardBody(
-                    dcc.Loading(
-                        dcc.Graph(id="graph-output", config={'responsive': True},style={"width": "100%"})
+                    html.Div(
+                        dcc.Graph(
+                            id="graph-output",
+                            config={'responsive': True},
+                            style={"width": "100%"}
+                        ),
+                        className="mx-auto",  # Bootstrap class to center the Div
+                        style={"width": "80%"}  # you can adjust the width as needed
                     )
                 )
             ]),
@@ -382,7 +392,7 @@ app.layout = dbc.Container([
                                 ], md=4),
                                 dbc.Col([
                                     html.Label("Wavelength (Ang)"),
-                                    dcc.Input(id="wl", type="number", value=parameters.wl, min=3700,max = 9000, step = 1)
+                                    dcc.Input(id="wl2", type="number", value=parameters.wl, min=3700,max = 9000, step = 1)
                                 ], md=4)
                             ])
                         ]),
@@ -593,32 +603,6 @@ def get_spec(spec_type, stellar_type= None, Teff = None, logg=None,uploaded_cont
     return spec
 
 
-# define client-side callbacks. Javascript function definition is provided as a string argument in the function definition
-app.clientside_callback(
-    """
-    function(n_clicks) {
-        // Return an object with the current window size
-        return {
-            width: window.innerWidth,
-            height: window.innerHeight
-        };
-    }
-    """,
-    Output("window-size", "data"),
-    Input("refresh-button", "n_clicks")
-)
-
-app.clientside_callback(
-    """
-    function(n_clicks) {
-        // Check for common mobile device identifiers in the user agent string.
-        var isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-        return isMobile;
-    }
-    """,
-    Output("is-mobile-store", "data"),
-    Input("refresh-button", "n_clicks")
-)
 
 
 def build_download_object(path, filename):
@@ -669,6 +653,95 @@ def save_output_callback(n_clicks):
         except Exception as e:
             return dash.no_update, f"Error saving output: {e}"
 
+# define client-side callbacks. Javascript function definition is provided as a string argument in the function definition
+app.clientside_callback(
+    """
+    function(n_intervals) {
+        // Return an object with the current window size
+        return {
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
+    }
+    """,
+    Output("window-size", "data"),
+    Input("interval", "n_intervals")
+)
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        var isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+        console.log("User agent:", navigator.userAgent);
+        console.log("isMobile:", isMobile);
+        return isMobile;
+    }
+    """,
+    Output("is-mobile-store", "data"),
+    Input("interval", "n_intervals")
+)
+
+def adjust_layout(fig, is_mobile, width):
+    '''
+    Adjust the layout of the figure based on the device type and window size.
+    '''
+    fig.update_layout(
+         margin=dict(t=60, b=50),
+         title={
+            "y": 0.91,       # Lower the title from the top of the figure (0.9 means 90% of the way down)
+            "x": 0.5,
+            "xanchor": "center",
+            "yanchor": "top"
+         },
+        autosize=True,         # Automatically resize the figure to fill its container.
+        xaxis=dict(autorange=True),  # Automatically scale the x-axis.
+        yaxis=dict(autorange=True),   # Automatically scale the y-axis.
+        legend=dict(font=dict(size=14),
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.03,
+                    xanchor="right",
+                    x=1),
+    )
+    #width = window_size.get("width", 1200)  # default if missing
+    if is_mobile:
+        # Adjust the font size for mobile devices.
+        fig.update_layout(
+            title={'font':dict(size=13),
+            "y": 0.85,       # Lower the title from the top of the figure (0.9 means 90% of the way down)
+            "x": 0.5,
+            "xanchor": "center",
+            "yanchor": "top"},
+            
+            autosize=True,
+            font=dict(size=10),
+            margin=dict(l=5, r=5, t=40, b=40),
+            legend=dict(font=dict(size=10),
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1),
+            xaxis=dict(autorange=True,
+                tickfont=dict(size=8),
+                titlefont=dict(size=8)
+                ,title_standoff=5),
+            yaxis=dict(autorange=True,
+                tickfont=dict(size=8),
+                titlefont=dict(size=8)
+                ,title_standoff=5),
+            yaxis2=dict(autorange=True,
+                tickfont=dict(size=8),
+                titlefont=dict(size=8)
+                ,title_standoff=5),
+            )
+    else:
+
+
+        fig.update_layout(
+            height=800,
+        )
+    return fig
+
 
 # Callback: Update the Plot when the Refresh Plot button is clicked.
 @app.callback(
@@ -676,6 +749,8 @@ def save_output_callback(n_clicks):
     Output("saturation-info", "children"),
     Output("saturation-info", "style"),
     Input("refresh-button", "n_clicks"),
+    Input("is-mobile-store", "data"),
+    Input("window-size", "data"), 
     State("calc-type", "value"),
     State("spec-type", "value"),
     State("stellar-spectrum-dropdown", "value"),
@@ -685,6 +760,7 @@ def save_output_callback(n_clicks):
     State("ab-mag-renorm", "value"),
     State("n-tel", "value"),
     State("wl", "value"),
+    State("wl2", "value"),
     State("n-tel-arr", "value"),
     State("n-tel-group", "value"),
     State("t_max", "value"),
@@ -696,13 +772,11 @@ def save_output_callback(n_clicks):
     State("overhead", "value"),
     State("snr-arr", "value"),
     State("upload-spectrum", "contents"), 
-    State("window-size", "data"), 
-    State("is-mobile-store", "data")
 
 )
-def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_temp, ab_mag_renorm,
-                n_tel, wl, n_tel_arr, n_tel_group, T_exp, sigma_limit, Type,
-                delta_sky, binning, T_norm, overhead_sec, SNR_arr, uploaded_contents, window_size, is_mobile):
+def update_plot(n_clicks,is_mobile, window_size, calc_type, spec_type, stellar_type, Teff, logg, bb_temp, ab_mag_renorm,
+                n_tel, wl, wl2, n_tel_arr, n_tel_group, T_exp, sigma_limit, Type,
+                delta_sky, binning, T_norm, overhead_sec, SNR_arr, uploaded_contents):
     """
     Updates global parameters based on user inputs, runs the ETC calculation, and computes
     the maximum and average counts per pixel. If the maximum exceeds parameters.saturation,
@@ -721,6 +795,8 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
     parameters.AB_mag_renorm = ab_mag_renorm
     parameters.n_tel = n_tel
     parameters.wl = wl
+    if calc_type=='spec_per_hour':
+        parameters.wl = wl2
     # Convert the comma-separated telescope numbers to a list of integers.
     parameters.n_tel_arr = [int(x.strip()) for x in n_tel_arr.split(',')]
     parameters.n_tel_group = n_tel_group
@@ -737,48 +813,13 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
     parameters.binning = [int(x) for x in binning.strip('[]').split(',')]
     spec = get_spec(spec_type, stellar_type, Teff, logg,uploaded_contents)
     fig, out, header = ETC.run_ETC(spec)
-    fig.update_layout(
-         margin=dict(t=60, b=50),
-         title={
-            "y": 0.91,       # Lower the title from the top of the figure (0.9 means 90% of the way down)
-            "x": 0.5,
-            "xanchor": "center",
-            "yanchor": "top"
-         },
-        autosize=True,         # Automatically resize the figure to fill its container.
-        xaxis=dict(autorange=True),  # Automatically scale the x-axis.
-        yaxis=dict(autorange=True),   # Automatically scale the y-axis.
-        legend=dict(font=dict(size=14),
-                    orientation="h",
-                    yanchor="bottom",
-                    y=1.03,
-                    xanchor="right",
-                    x=1),
-        width=1000,
-        height=800,
-    )
-    #width = window_size.get("width", 1200)  # default if missing
-    if is_mobile:
-        # Adjust the font size for mobile devices.
-        fig.update_layout(
-            autosize=True,
-            font=dict(size=10),
-            margin=dict(l=10, r=10, t=60, b=20),
-            legend=dict(font=dict(size=10),
-                        orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
-                        xanchor="right",
-                        x=1),
-            xaxis=dict(autorange=True,
-                tickfont=dict(size=7),
-                titlefont=dict(size=7)),
-            yaxis=dict(autorange=True,
-                tickfont=dict(size=5),
-                titlefont=dict(size=7)),
-            width=500,
-            height=400,
-            )
+
+    width = window_size.get("width", 1200)  # default if missing
+    #import sys
+    #print(is_mobile)
+    #sys.stdout.flush()
+    fig = adjust_layout(fig, is_mobile, width)
+
 
     # Compute saturation information by calling the helper function.
     sat_info_children, sat_info_style = compute_saturation_info()
