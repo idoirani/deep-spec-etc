@@ -35,6 +35,7 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
 # Define the layout.
 app.layout = dbc.Container([
     dcc.Store(id="window-size", data={}),
+    dcc.Store(id="is-mobile-store", data=False),
     # Title Frame: Displays the main title in a card.
     dbc.Row(
         dbc.Col(
@@ -591,6 +592,8 @@ def get_spec(spec_type, stellar_type= None, Teff = None, logg=None,uploaded_cont
                 print("There was an error processing the uploaded file:", e)
     return spec
 
+
+# define client-side callbacks. Javascript function definition is provided as a string argument in the function definition
 app.clientside_callback(
     """
     function(n_clicks) {
@@ -605,6 +608,17 @@ app.clientside_callback(
     Input("refresh-button", "n_clicks")
 )
 
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        // Check for common mobile device identifiers in the user agent string.
+        var isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+        return isMobile;
+    }
+    """,
+    Output("is-mobile-store", "data"),
+    Input("refresh-button", "n_clicks")
+)
 
 
 def build_download_object(path, filename):
@@ -682,11 +696,13 @@ def save_output_callback(n_clicks):
     State("overhead", "value"),
     State("snr-arr", "value"),
     State("upload-spectrum", "contents"), 
-    State("window-size", "data")
+    State("window-size", "data"), 
+    State("is-mobile-store", "data")
+
 )
 def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_temp, ab_mag_renorm,
                 n_tel, wl, n_tel_arr, n_tel_group, T_exp, sigma_limit, Type,
-                delta_sky, binning, T_norm, overhead_sec, SNR_arr, uploaded_contents, window_size):
+                delta_sky, binning, T_norm, overhead_sec, SNR_arr, uploaded_contents, window_size, is_mobile):
     """
     Updates global parameters based on user inputs, runs the ETC calculation, and computes
     the maximum and average counts per pixel. If the maximum exceeds parameters.saturation,
@@ -732,8 +748,7 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
                     xanchor="right",
                     x=1),
     )
-    width = window_size.get("width", 1200)  # default if missing
-    is_mobile = (width < 768)
+    #width = window_size.get("width", 1200)  # default if missing
     if is_mobile:
         # Adjust the font size for mobile devices.
         fig.update_layout(
