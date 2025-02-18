@@ -738,15 +738,24 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
     spec = get_spec(spec_type, stellar_type, Teff, logg,uploaded_contents)
     fig, out, header = ETC.run_ETC(spec)
     fig.update_layout(
+         margin=dict(t=60, b=50),
+         title={
+            "y": 0.91,       # Lower the title from the top of the figure (0.9 means 90% of the way down)
+            "x": 0.5,
+            "xanchor": "center",
+            "yanchor": "top"
+         },
         autosize=True,         # Automatically resize the figure to fill its container.
         xaxis=dict(autorange=True),  # Automatically scale the x-axis.
         yaxis=dict(autorange=True),   # Automatically scale the y-axis.
         legend=dict(font=dict(size=14),
                     orientation="h",
                     yanchor="bottom",
-                    y=1.02,
+                    y=1.03,
                     xanchor="right",
                     x=1),
+        width=1000,
+        height=800,
     )
     #width = window_size.get("width", 1200)  # default if missing
     if is_mobile:
@@ -766,7 +775,10 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
                 titlefont=dict(size=7)),
             yaxis=dict(autorange=True,
                 tickfont=dict(size=5),
-                titlefont=dict(size=7)))
+                titlefont=dict(size=7)),
+            width=500,
+            height=400,
+            )
 
     # Compute saturation information by calling the helper function.
     sat_info_children, sat_info_style = compute_saturation_info()

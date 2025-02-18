@@ -79,6 +79,28 @@ def plot_limmag_vs_exp_time(T_exp_vec,
         title=dict(text=f'Limiting magnitude at {wl_AA} Ang (R = {R}), per resolution element', font=dict(size=20))
     else:
         raise ValueError(f'Invalid type: {type}. type must be either "per pixel" or "per element".')
+    Tmax = np.max(T_exp_vec)
+    logmax = np.floor(np.log10(Tmax))
+    tickmax = Tmax/10**logmax
+    tickvals=[]
+    ticktext=[]    
+
+    for i in range(int(np.log10(Tmax)//1)):
+        tickvals.append(10**i)        
+        tickvals.append(2*10**i)
+        tickvals.append(5*10**i)
+        ticktext.append(str(10**i))
+        ticktext.append(str(2*10**i))
+        ticktext.append(str(5*10**i))
+
+    if tickmax>=0.1:
+        tickvals.append(10**logmax)        
+        ticktext.append(str(int(10**logmax)))
+        tickvals.append(2*10**logmax)        
+        ticktext.append(str(int(2*10**logmax)))
+    if tickmax>=0.2:
+        tickvals.append(5*10**logmax)        
+        ticktext.append(str(int(5*10**logmax)))
 
     fig.update_layout(
         title=title,
@@ -89,7 +111,10 @@ def plot_limmag_vs_exp_time(T_exp_vec,
                 tickfont=dict(size=20),
                 gridcolor='rgba(77,77,77,0.3)',  # approximately (0.3, 0.3, 0.3, 0.3)
                 gridwidth=0.5,
-                zeroline=False
+                zeroline=False,
+                tickmode="array",
+                tickvals = tickvals, 
+                ticktext = ticktext
         ),
         yaxis=dict(
             title=dict(text=f'{sigma_limit:.0f}-sigma limiting magnitude (AB)', font=dict(size=20)),
@@ -249,7 +274,31 @@ def plot_spec_per_hour(mag_analyze, SNR = [10,20,50], overhead_sec = 300):
     x_max = np.max(mag_analyze)
 
     # Calculate the overhead limit value.
-    overhead_limit = 20 * 3600 / overhead_sec
+    overhead_limit = parameters.n_tel * 3600 / overhead_sec
+
+    Nmax = np.max(overhead_limit*2)
+    logmax = np.floor(np.log10(Nmax))
+    tickmax = Nmax/10**logmax
+    tickvals=[]
+    ticktext=[]    
+
+    for i in range(int(np.log10(Nmax)//1)):
+        tickvals.append(10**i)        
+        tickvals.append(2*10**i)
+        tickvals.append(5*10**i)
+        ticktext.append(str(10**i))
+        ticktext.append(str(2*10**i))
+        ticktext.append(str(5*10**i))
+
+    if tickmax>=0.1:
+        tickvals.append(10**logmax)        
+        ticktext.append(str(int(10**logmax)))
+        tickvals.append(2*10**logmax)        
+        ticktext.append(str(int(2*10**logmax)))
+    if tickmax>=0.2:
+        tickvals.append(5*10**logmax)        
+        ticktext.append(str(int(5*10**logmax)))
+
 
     # Add a horizontal line (as a scatter trace) for the overhead limit.
     fig.add_trace(go.Scatter(
@@ -273,8 +322,11 @@ def plot_spec_per_hour(mag_analyze, SNR = [10,20,50], overhead_sec = 300):
             title=dict(text='Spectra/hour', font=dict(size=20)),
             type='log',
             # Specify the range in log10 space: [log10(min), log10(max)]
-            range=[np.log10(0.9), np.log10(300)],
-            tickfont=dict(size=20)
+            range=[np.log10(0.9), np.log10(overhead_limit*2)],
+            tickfont=dict(size=20),
+            tickmode="array",
+            tickvals = tickvals, 
+            ticktext = ticktext
         ),
         legend=dict(font=dict(size=20)),
         margin=dict(l=80, r=80, t=80, b=80)
