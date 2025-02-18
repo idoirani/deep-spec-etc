@@ -671,8 +671,6 @@ app.clientside_callback(
     """
     function(n_clicks) {
         var isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-        console.log("User agent:", navigator.userAgent);
-        console.log("isMobile:", isMobile);
         return isMobile;
     }
     """,
@@ -711,7 +709,6 @@ def adjust_layout(fig, is_mobile, width):
             "x": 0.5,
             "xanchor": "center",
             "yanchor": "top"},
-            
             autosize=True,
             font=dict(size=10),
             margin=dict(l=5, r=5, t=40, b=40),
@@ -723,16 +720,22 @@ def adjust_layout(fig, is_mobile, width):
                         x=1),
             xaxis=dict(autorange=True,
                 tickfont=dict(size=8),
-                titlefont=dict(size=8)
-                ,title_standoff=5),
+                title=dict(
+                    font=dict(size=8),
+                    standoff=5)
+                ),
             yaxis=dict(autorange=True,
                 tickfont=dict(size=8),
-                titlefont=dict(size=8)
-                ,title_standoff=5),
+                title=dict(
+                    font=dict(size=8),
+                    standoff=5)
+                ),
             yaxis2=dict(autorange=True,
                 tickfont=dict(size=8),
-                titlefont=dict(size=8)
-                ,title_standoff=5),
+                title=dict(
+                    font=dict(size=8),
+                    standoff=5)
+                ),
             )
     else:
 
