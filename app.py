@@ -84,7 +84,7 @@ app.layout = dbc.Container([
             ]),
             xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
         ),
-        className="mb-4"
+        className="graph-container"  # This applies the CSS rule defined in assets/styles.css
     ),
     
     dbc.Row(
