@@ -96,7 +96,7 @@ app.layout = dbc.Container([
                                 "Refresh Plot", 
                                 id="refresh-button", 
                                 n_clicks=0, 
-                                style={"width": "200px", "height": "50px", "fontSize": "20px"}
+                                style={"width": "150px", "height": "40px", "fontSize": "16px"}
                             ),
                             style={"textAlign": "center"}
                         )
@@ -114,7 +114,7 @@ app.layout = dbc.Container([
                                     "Save Output As", 
                                     id="save-button", 
                                     n_clicks=0, 
-                                    style={"width": "200px", "height": "50px", "fontSize": "20px"}
+                                    style={"width": "150px", "height": "40px", "fontSize": "16px"}
                                 ),
                                 html.Div(id="save-status", children="", style={"marginTop": "10px"})
                             ],
@@ -739,7 +739,7 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
         fig.update_layout(
             autosize=True,
             font=dict(size=10),
-            margin=dict(l=15, r=15, t=60, b=20),
+            margin=dict(l=10, r=10, t=60, b=20),
             legend=dict(font=dict(size=10),
                         orientation="h",
                         yanchor="bottom",
@@ -748,10 +748,10 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
                         x=1),
             xaxis=dict(autorange=True,
                 tickfont=dict(size=7),
-                titlefont=dict(size=10)),
+                titlefont=dict(size=7)),
             yaxis=dict(autorange=True,
-                tickfont=dict(size=7),
-                titlefont=dict(size=10)))
+                tickfont=dict(size=5),
+                titlefont=dict(size=7)))
 
     # Compute saturation information by calling the helper function.
     sat_info_children, sat_info_style = compute_saturation_info()
