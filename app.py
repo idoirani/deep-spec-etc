@@ -15,6 +15,18 @@ import dash_bootstrap_components as dbc
 import parameters  # Module containing default parameters
 import ETC         # Module that runs the ETC calculations and returns a Plotly figure
 import numpy as np 
+import os, socket
+
+
+# Checks if the current environment is AWS based on specific environment variables.
+hostname = socket.gethostname()
+is_aws = (os.getenv('AWS_EXECUTION_ENV') is not None) or (os.getenv('IS_AWS') == '1') or hostname.startswith('EC2-AMAZ')
+
+if is_aws:
+    OUTPUT_PATH = path = "d:/soc/temp/deep-spec-etc/output.txt"
+else:
+    OUTPUT_PATH = path = "C:/Users/idoi/Dropbox/MAST/Deep_Spec/ETC API/output.txt"
+
 
 # Initialize the Dash app with Bootstrap CSS and mobile-friendly meta tags.
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
@@ -634,7 +646,7 @@ def save_output_callback(n_clicks):
     """
     if n_clicks > 0:
         try:
-            path = "C:/Users/idoi/Dropbox\MAST/Deep_Spec/ETC API/output.txt"
+            path = OUTPUT_PATH
             ETC.save_output(parameters.output, parameters.header, path)
             download_data = build_download_object(path, "ETC_output.txt")
 
@@ -749,7 +761,8 @@ def update_plot(n_clicks, calc_type, spec_type, stellar_type, Teff, logg, bb_tem
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
-    #app.run_server(debug=True, host='0.0.0.0', port=8091)
-
+    if is_aws:
+        app.run_server(debug=True, host='0.0.0.0', port=8091)
+    else:
+        app.run_server(debug=True)
 
