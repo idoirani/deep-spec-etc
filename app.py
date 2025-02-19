@@ -52,8 +52,6 @@ app.layout = dbc.Container([
         ),
         className="mb-4"
     ),
-    # Informational Frame: Displays a smaller red notice and an explanation in black.
-
     dbc.Row(
         dbc.Col(
             dbc.Card([
@@ -139,24 +137,12 @@ app.layout = dbc.Container([
         className="mb-4"
     ),    
     
-    # Saturation Info Frame: Shows max and average counts per pixel.
-    dbc.Row(
-        dbc.Col(
-            dbc.Card([
-                dbc.CardHeader("Saturation Information"),
-                dbc.CardBody(
-                    html.Div(id="saturation-info", children="No data yet")
-                )
-            ]),
-            xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
-        ),
-        className="mb-4"
-    ),
+
     # Parameter Card Frame: Contains all parameter inputs grouped in several sections.
     dbc.Row(
         dbc.Col(
             dbc.Card([
-                dbc.CardHeader("Observing Conditions and Source Parameters"),
+                dbc.CardHeader("General Parameters"),
                 dbc.CardBody([
                     # Shared row (always visible)
                     dbc.Row([
@@ -201,10 +187,40 @@ app.layout = dbc.Container([
                             )
                         ], md=4)
                     ], className="mb-3"),
-                    
+                ])
+            ]),
+            xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
+        )
+    ),
+
+    dbc.Row(
+        dbc.Col(
+            dbc.Card([
+                dbc.CardHeader("Exposure and Source Parameters"),
+                dbc.CardBody([
                     # SNR-Specific Parameters Row (only visible when calc-type == "SNR")
                     dbc.Row(
                         dbc.Col([
+                            # First row within SNR options: Exposure Time, V Band Magnitude, and number of telescopes.                   
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label("V Band Magnitude", style={"margin-right": "15px", "margin-bottom": "10px"}),
+                                    dcc.Input(id="ab-mag-renorm", type="number", value=parameters.AB_mag_renorm, min=5,max = 23)
+                                ], md=4),
+
+                                dbc.Col([
+                                    html.Label("Exposure Time", style={"margin-right": "15px", "margin-bottom": "10px"}),
+                                    dcc.Input(id="t_snr", type="number", value=parameters.T_norm, min=1,max = 2000, step = 1)
+                                ], md=4), 
+
+
+                                dbc.Col([
+                                    html.Label("Number of Independent Telescopes/Exposures", style={"margin-right": "15px", "margin-bottom": "10px"}),
+                                    dcc.Input(id="n-tel-group", type="number", value=parameters.n_tel_group, min=1,max = 20, step = 1)
+                                ], md=4)
+                            ], className="mb-2"),
+
+
                             # Spectrum Type dropdown
                             dbc.Row([
                                 dbc.Col([
@@ -313,24 +329,6 @@ app.layout = dbc.Container([
                                 )
 
                             ], className="mb-2"),
-                            # Second row within SNR options: Exposure Time, V Band Magnitude, and number of telescopes.                   
-                            dbc.Row([
-                                dbc.Col([
-                                    html.Label("V Band Magnitude", style={"margin-right": "15px", "margin-bottom": "10px"}),
-                                    dcc.Input(id="ab-mag-renorm", type="number", value=parameters.AB_mag_renorm, min=5,max = 23)
-                                ], md=4),
-
-                                dbc.Col([
-                                    html.Label("Exposure Time", style={"margin-right": "15px", "margin-bottom": "10px"}),
-                                    dcc.Input(id="t_snr", type="number", value=parameters.T_norm, min=1,max = 2000, step = 1)
-                                ], md=4), 
-
-
-                                dbc.Col([
-                                    html.Label("Number of Independent Telescopes/Exposures", style={"margin-right": "15px", "margin-bottom": "10px"}),
-                                    dcc.Input(id="n-tel-group", type="number", value=parameters.n_tel_group, min=1,max = 20, step = 1)
-                                ], md=4)
-                            ], className="mb-2"),
 
                         ]),
                         id = "snr-options-row",
@@ -407,6 +405,25 @@ app.layout = dbc.Container([
             xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
         )
     ),
+
+
+
+    # Saturation Info Frame: Shows max and average counts per pixel.
+    dbc.Row(
+        dbc.Col(
+            dbc.Card([
+                dbc.CardHeader("Saturation Information"),
+                dbc.CardBody(
+                    html.Div(id="saturation-info", children="No data yet")
+                )
+            ]),
+            xs=12, sm=12, md=8  # on small screens use full width, on medium use 8 columns
+        ),
+        className="mb-4"
+    ),
+
+    # Informational Frame
+
     dbc.Row(
         dbc.Col(
             dbc.Card([
