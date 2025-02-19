@@ -417,7 +417,7 @@ app.layout = dbc.Container([
                         style={"color": "black", "textAlign": "left"}
                     ),
                     html.P(
-                        "(1) SNR calculator: This calculator allows the user to estimate the wavalength dependent SNR for different observing parameters and based on the spectrum and brightness of the source. For MAST/DeepSpec, multiple telescopes may observe the target simultanously, acting as individual exposures summed in post-processing. The SNR provided here is reported per spectral pixel (i.e., assuming the trace is summed in the direction perpendicular to the dispersion axis). For per-resolution element based SNR, the user may use [3,3] binning. The user should be advised that some of the spectra provided in this calculator are observations with some noise associated with them.",
+                        "(1) SNR calculator: This calculator allows the user to estimate the wavalength dependent SNR for different observing parameters and based on the spectrum and brightness of the source. For MAST/DeepSpec, multiple telescopes may observe the target simultanously, acting as independent exposures summed in post-processing. The SNR provided here is reported per spectral pixel (i.e., assuming the trace is summed in the direction perpendicular to the dispersion axis). For per-resolution element based SNR, the user may use [3,3] binning. The user should be advised that some of the spectra provided in this calculator are observations with some noise associated with them.",
                         style={"color": "black", "textAlign": "left"}
                     ),
                     html.P(
