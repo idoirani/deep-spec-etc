@@ -217,7 +217,7 @@ def plot_SNR_simspec(lam, simspec, SNR_proj):
             tickfont=dict(size=18, color='red')
         ),
         yaxis2=dict(
-            title=dict(text='SNR ratio (per pixel)', font=dict(size=18, color='blue')),
+            title=dict(text='SNR (per pixel)', font=dict(size=18, color='blue')),
             overlaying='y',
             side='right',
             tickfont=dict(size=18, color='blue')

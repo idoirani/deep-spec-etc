@@ -24,7 +24,7 @@ def run_ETC(spec = None):
                                          binning=parameters.binning, 
                                          n_tel=parameters.n_tel_group, 
                                          Sky_brightness= parameters.Sky_brightness_surface_den
-                                         , Type = parameters.Type)
+                                         , Type = 'per pixel')
         parameters.counts = total_counts
         fig, out, header = plot_SNR_simspec(parameters.lam, spec_sim, SNR_proj)
     elif parameters.calc_type == 'spec_per_hour':
