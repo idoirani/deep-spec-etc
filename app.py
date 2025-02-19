@@ -161,7 +161,7 @@ app.layout = dbc.Container([
                     # Shared row (always visible)
                     dbc.Row([
                         dbc.Col([
-                            html.Label("Calculation Type"),
+                            html.Label("Calculation Type", style={"margin-right": "15px", "margin-bottom": "10px"}),
                             dcc.Dropdown(
                                 id="calc-type",
                                 options=[
@@ -173,7 +173,7 @@ app.layout = dbc.Container([
                             )
                         ], md=4),
                         dbc.Col([
-                            html.Label("Sky Brightness (relative to dark)"),
+                            html.Label("Sky Brightness (relative to dark)", style={"margin-right": "15px", "margin-bottom": "10px"}),
                             dcc.Dropdown(
                                 id="sky-brightness",
                                 options=[
@@ -186,7 +186,7 @@ app.layout = dbc.Container([
                             )
                         ], md=4),
                         dbc.Col([
-                            html.Label("Binning"),
+                            html.Label("Binning", style={"margin-right": "15px", "margin-bottom": "10px"}),
                             dcc.Dropdown(
                                 id="binning",
                                 options=[
@@ -208,7 +208,7 @@ app.layout = dbc.Container([
                             # Spectrum Type dropdown
                             dbc.Row([
                                 dbc.Col([
-                                    html.Label("Spectrum Type"),
+                                    html.Label("Spectrum Type", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Dropdown(
                                         id="spec-type",
                                         options=[
@@ -227,7 +227,7 @@ app.layout = dbc.Container([
                                     html.Div(
                                         id="stellar-spectrum-options",
                                         children=[
-                                            html.Label("Choose Stellar Type"),
+                                            html.Label("Choose Stellar Type", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                             dcc.Dropdown(
                                                 id="stellar-spectrum-dropdown",
                                                 options=[{'label': key, 'value': key} for key in parameters.stellar_path_dic.keys()],
@@ -245,7 +245,7 @@ app.layout = dbc.Container([
                                     html.Div(
                                         id="bb-temp-container",
                                         children=[
-                                            html.Label("Blackbody Temperature"),
+                                            html.Label("Blackbody Temperature", style={"margin-right": "15px"}),
                                             dcc.Input(id="bb-temp", type="number", value=parameters.bb_temp, min=1000,max = 1000000, step = 1)
                                         ]
                                     ),
@@ -257,7 +257,7 @@ app.layout = dbc.Container([
                                     html.Div(
                                         id="Teff-options",
                                         children=[
-                                            html.Label("Teff"),
+                                            html.Label("Teff", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                             dcc.Dropdown(
                                                 id="Teff-dropdown",
                                                 options=[{'label': T, 'value': T} for T in np.unique(parameters.Teff)],
@@ -275,7 +275,7 @@ app.layout = dbc.Container([
                                     html.Div(
                                         id="logg-options",
                                         children=[
-                                            html.Label("logg"),
+                                            html.Label("logg", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                             dcc.Dropdown(
                                                 id="logg-dropdown",
                                                 options=[{'label': Lg, 'value': Lg} for Lg in np.unique(parameters.logg)],
@@ -316,16 +316,18 @@ app.layout = dbc.Container([
                             # Second row within SNR options: Exposure Time, V Band Magnitude, and number of telescopes.                   
                             dbc.Row([
                                 dbc.Col([
-                                    html.Label("Exposure Time"),
+                                    html.Label("V Band Magnitude", style={"margin-right": "15px", "margin-bottom": "10px"}),
+                                    dcc.Input(id="ab-mag-renorm", type="number", value=parameters.AB_mag_renorm, min=5,max = 23)
+                                ], md=4),
+
+                                dbc.Col([
+                                    html.Label("Exposure Time", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Input(id="t_snr", type="number", value=parameters.T_norm, min=1,max = 2000, step = 1)
                                 ], md=4), 
 
+
                                 dbc.Col([
-                                    html.Label("V Band Magnitude"),
-                                    dcc.Input(id="ab-mag-renorm", type="number", value=parameters.AB_mag_renorm, min=5,max = 23)
-                                ], md=4),
-                                dbc.Col([
-                                    html.Label("Number of Telescopes in Group"),
+                                    html.Label("Number of Independent Telescopes/Exposures", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Input(id="n-tel-group", type="number", value=parameters.n_tel_group, min=1,max = 20, step = 1)
                                 ], md=4)
                             ], className="mb-2"),
@@ -340,25 +342,25 @@ app.layout = dbc.Container([
                         dbc.Col([
                             dbc.Row([
                                 dbc.Col([
-                                    html.Label("Number of Telescopes"),
+                                    html.Label("Number of Telescopes", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Input(id="n-tel-arr", type="text", value="1,4,10,20")
                                 ], md=4),
                                 dbc.Col([
-                                    html.Label("Maximum Exposure Time"),
+                                    html.Label("Maximum Exposure Time", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Input(id="t_max", type="number", value=parameters.T_exp, min=100,max = 2000, step = 1)
                                 ], md=4),
                                 dbc.Col([
-                                    html.Label("Wavelength (Ang)"),
+                                    html.Label("Wavelength (Ang)", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Input(id="wl", type="number", value=parameters.wl, min=3700,max = 9000, step = 1)
                                 ], md=4)
                             ], className="mb-2"),
                             dbc.Row([
                                 dbc.Col([
-                                    html.Label("SNR Limit"),
+                                    html.Label("SNR Limit", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Input(id="sigma_limit", type="number", value=parameters.sigma_limit, min=5, max = 100, step = 1)
                                 ], md=4),
                                 dbc.Col([
-                                    html.Label("SNR Calculation Type"),
+                                    html.Label("SNR Calculation Type", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Dropdown(
                                         id="snr-type",
                                         options=[
@@ -379,19 +381,19 @@ app.layout = dbc.Container([
                         dbc.Col([
                             dbc.Row([
                                 dbc.Col([
-                                    html.Label("Number of Telescopes in Full Array"),
+                                    html.Label("Number of Telescopes in Full Array", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Input(id="n-tel", type="number", value=parameters.n_tel, min=1,max = 20, step = 1)
                                 ], md=4),
                                 dbc.Col([
-                                    html.Label("Overhead (sec)"),
+                                    html.Label("Overhead (sec)", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Input(id="overhead", type="number", value=parameters.overhead_sec, min=1,max = 1000, step = 1)
                                 ], md=4),
                                 dbc.Col([
-                                    html.Label("SNR limits"),
+                                    html.Label("SNR limits", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Input(id="snr-arr", type="text", value="10,20,50")
                                 ], md=4),
                                 dbc.Col([
-                                    html.Label("Wavelength (Ang)"),
+                                    html.Label("Wavelength (Ang)", style={"margin-right": "15px", "margin-bottom": "10px"}),
                                     dcc.Input(id="wl2", type="number", value=parameters.wl, min=3700,max = 9000, step = 1)
                                 ], md=4)
                             ])
@@ -537,14 +539,14 @@ def compute_saturation_info():
         row1 = dbc.Row([
             dbc.Col(
                 dbc.Card([
-                    dbc.CardHeader("Max counts per pixel"),
+                    dbc.CardHeader("Max Counts per Pixel"),
                     dbc.CardBody(html.H6(f"{max_counts:.2f}", style=max_box_style))
                 ]),
                 md=6
             ),
             dbc.Col(
                 dbc.Card([
-                    dbc.CardHeader("Avg counts per pixel"),
+                    dbc.CardHeader("Avg Counts per Pixel"),
                     dbc.CardBody(html.H6(f"{avg_counts:.2f}", style=avg_box_style))
                 ]),
                 md=6
