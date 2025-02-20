@@ -80,13 +80,16 @@ app.layout = dbc.Container([
             dbc.Card([
                 dbc.CardBody(
                     html.Div(
-                        dcc.Graph(
-                            id="graph-output",
-                            config={'responsive': True},
-                            style={"width": "100%"}
-                        ),
-                        className="mx-auto",  # Bootstrap class to center the Div
-                        style={"width": "80%"}  # you can adjust the width as needed
+                        dcc.Loading(
+                            dcc.Graph(
+                                id="graph-output",
+                                config={'responsive': True},
+                                style={"width": "100%"}
+                            ),
+                            className="mx-auto",  # Bootstrap class to center the Div
+                            style={"width": "80%"}  # you can adjust the width as needed
+                        )
+
                     )
                 )
             ]),
